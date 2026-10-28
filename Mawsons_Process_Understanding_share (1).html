@@ -1,0 +1,409 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Mawsons Process Understanding</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Lora:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root {
+    --bg:#F4F3F0;--surface:#FFFFFF;--surface-2:#EFEDE7;--fg:#1A1A17;--muted:#6A6960;--border:#DDDBD1;
+    --accent:#2A52CC;
+    --known:#166534;--known-bg:#DCFCE7;--known-border:#86EFAC;
+    --tacit:#854D0E;--tacit-bg:#FEF3C7;--tacit-border:#FCD34D;
+    --unknown:#991B1B;--unknown-bg:#FEE2E2;--unknown-border:#FCA5A5;
+    --p1:#1D4ED8;--p1-bg:#EFF6FF;--p1-border:#BFDBFE;--p2-bg:#F1F0ED;
+    /* Diagram vars */
+    --lane:#f7f6f2;--line:#5f5e5a;--warn:#a32d2d;
+    --gf:#F1EFE8;--gs:#5F5E5A;--gt:#2C2C2A;--gu:#444441;
+    --pf:#EEEDFE;--ps:#534AB7;--pt:#3C3489;--pu:#534AB7;
+    --af:#FAEEDA;--as:#854F0B;--at:#633806;--au:#854F0B;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --bg:#16161A;--surface:#212126;--surface-2:#2A2A30;--fg:#EDECE6;--muted:#9A9890;--border:#35353C;
+      --accent:#7B9CF5;
+      --known:#4ADE80;--known-bg:#052E16;--known-border:#166534;
+      --tacit:#FCD34D;--tacit-bg:#1C1002;--tacit-border:#92400E;
+      --unknown:#FCA5A5;--unknown-bg:#1A0404;--unknown-border:#991B1B;
+      --p1:#93C5FD;--p1-bg:#0C1A3B;--p1-border:#1E3A8A;--p2-bg:#28282F;
+      --lane:#242422;--line:#b4b2a9;--warn:#f09595;
+      --gf:#444441;--gs:#B4B2A9;--gt:#F1EFE8;--gu:#D3D1C7;
+      --pf:#3C3489;--ps:#AFA9EC;--pt:#CECBF6;--pu:#AFA9EC;
+      --af:#633806;--as:#EF9F27;--at:#FAC775;--au:#EF9F27;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#16161A;--surface:#212126;--surface-2:#2A2A30;--fg:#EDECE6;--muted:#9A9890;--border:#35353C;
+    --accent:#7B9CF5;
+    --known:#4ADE80;--known-bg:#052E16;--known-border:#166534;
+    --tacit:#FCD34D;--tacit-bg:#1C1002;--tacit-border:#92400E;
+    --unknown:#FCA5A5;--unknown-bg:#1A0404;--unknown-border:#991B1B;
+    --p1:#93C5FD;--p1-bg:#0C1A3B;--p1-border:#1E3A8A;--p2-bg:#28282F;
+    --lane:#242422;--line:#b4b2a9;--warn:#f09595;
+    --gf:#444441;--gs:#B4B2A9;--gt:#F1EFE8;--gu:#D3D1C7;
+    --pf:#3C3489;--ps:#AFA9EC;--pt:#CECBF6;--pu:#AFA9EC;
+    --af:#633806;--as:#EF9F27;--at:#FAC775;--au:#EF9F27;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{background:var(--bg);color:var(--fg);font-family:'Lora',Georgia,serif;font-size:16px;line-height:1.65;margin:0;max-width:900px;margin-inline:auto;padding-inline:20px;padding-block:36px;}
+  /* Header */
+  .doc-header{border-bottom:2.5px solid var(--fg);padding-bottom:22px;margin-bottom:0;}
+  .eyebrow{font-family:'Syne',sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;}
+  .doc-title{font-family:'Syne',sans-serif;font-size:clamp(26px,5.5vw,42px);font-weight:800;line-height:1.08;margin:0 0 10px;text-wrap:balance;}
+  .doc-subtitle{color:var(--muted);font-style:italic;font-size:15px;margin:0 0 16px;}
+  .doc-meta{display:flex;flex-wrap:wrap;gap:4px 22px;font-family:'Syne',sans-serif;font-size:12px;color:var(--muted);}
+  .doc-meta strong{color:var(--fg);}
+  /* Tabs */
+  .nav-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:28px;margin-top:0;overflow-x:auto;}
+  .tab-btn{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:14px 18px;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;transition:color .12s,border-color .12s;letter-spacing:.03em;white-space:nowrap;}
+  .tab-btn.active{color:var(--fg);border-bottom-color:var(--fg);}
+  .tab-btn:hover:not(.active){color:var(--fg);}
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block;}
+  /* Intro box */
+  .intro-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:14px 18px;margin-bottom:22px;font-size:14px;line-height:1.6;}
+  .intro-box p{margin:0 0 6px;}.intro-box p:last-child{margin:0;}
+  /* Legend */
+  .legend{display:flex;flex-wrap:wrap;gap:8px 22px;padding:11px 16px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:28px;font-family:'Syne',sans-serif;font-size:12px;align-items:center;}
+  .legend-item{display:flex;align-items:center;gap:7px;}
+  /* Phase */
+  .phase-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:30px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .phase-label:first-child{margin-top:0;}
+  .phase-pill{font-size:10px;padding:2px 8px;border-radius:100px;background:var(--surface-2);color:var(--muted);border:1px solid var(--border);font-weight:600;}
+  /* Step card */
+  .step{display:grid;grid-template-columns:44px 1fr;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;}
+  .step-num{font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:var(--muted);background:var(--surface-2);border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+  .step-body{padding:13px 16px;}
+  .step-top{display:flex;align-items:flex-start;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-bottom:5px;}
+  .step-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13.5px;line-height:1.3;flex:1;min-width:0;}
+  .step-detail{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:5px;}
+  .step-who{font-family:'Syne',sans-serif;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);opacity:.8;}
+  .warn-note{background:var(--tacit-bg);border:1px solid var(--tacit-border);border-radius:5px;padding:8px 12px;font-size:12.5px;color:var(--tacit);margin-top:8px;line-height:1.5;}
+  /* Chips */
+  .chip{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:100px;white-space:nowrap;flex-shrink:0;line-height:1.5;}
+  .chip-known{color:var(--known);background:var(--known-bg);border:1px solid var(--known-border);}
+  .chip-tacit{color:var(--tacit);background:var(--tacit-bg);border:1px solid var(--tacit-border);}
+  .chip-unknown{color:var(--unknown);background:var(--unknown-bg);border:1px solid var(--unknown-border);}
+  .chip-p1{color:var(--p1);background:var(--p1-bg);border:1px solid var(--p1-border);}
+  .chip-p2{color:var(--muted);background:var(--p2-bg);border:1px solid var(--border);}
+  /* Questions */
+  .q-group{margin-bottom:30px;}
+  .q-group-heading{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:7px;border-bottom:1px solid var(--border);margin:0 0 12px;}
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:10px;display:grid;grid-template-columns:32px 1fr auto;gap:0 12px;align-items:start;}
+  .q-id{font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:var(--muted);padding-top:2px;font-variant-numeric:tabular-nums;}
+  .q-text{font-size:14px;line-height:1.55;}
+  .q-why{font-size:12.5px;color:var(--muted);margin-top:5px;font-style:italic;}
+  /* References */
+  .ref-section{margin-bottom:36px;}
+  .ref-heading{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+  .ref-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:10px;}
+  .ref-card h4{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin:0 0 8px;}
+  .ref-card p{font-size:13px;color:var(--muted);margin:0 0 6px;line-height:1.55;}
+  .ref-card p:last-child{margin:0;}
+  .ref-meta{font-family:'Syne',sans-serif;font-size:11px;color:var(--muted);letter-spacing:.04em;margin-bottom:10px;}
+  /* Meeting notes bullets */
+  .notes-list{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .notes-list li{margin-bottom:4px;}
+  .notes-list li strong{color:var(--fg);font-family:'Syne',sans-serif;font-size:12px;}
+  /* Diagram wrapper */
+  .diagram-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface);margin-top:12px;}
+  .diagram-wrap svg .t{font-weight:500;font-size:12px;}
+  .diagram-wrap svg .s{font-size:11px;}
+  .diagram-wrap svg .b{font-size:11px;font-weight:500;}
+  .diagram-wrap svg .ts{font-size:11px;fill:var(--muted);}
+  .diagram-wrap svg .ln{font-size:12px;font-weight:600;fill:var(--fg);}
+  .diagram-wrap svg .ls{font-size:11px;fill:var(--muted);}
+  .diagram-wrap svg .ph{font-size:12px;font-weight:600;fill:var(--fg);}
+  .diagram-wrap svg .g rect,.diagram-wrap svg .g polygon{fill:var(--gf);stroke:var(--gs);}
+  .diagram-wrap svg .g .t,.diagram-wrap svg .g .b{fill:var(--gt);}
+  .diagram-wrap svg .g .s{fill:var(--gu);}
+  .diagram-wrap svg .pu rect,.diagram-wrap svg .pu polygon{fill:var(--pf);stroke:var(--ps);}
+  .diagram-wrap svg .pu .t,.diagram-wrap svg .pu .b{fill:var(--pt);}
+  .diagram-wrap svg .pu .s{fill:var(--pu);}
+  .diagram-wrap svg .am rect,.diagram-wrap svg .am polygon{fill:var(--af);stroke:var(--as);}
+  .diagram-wrap svg .am .t,.diagram-wrap svg .am .b{fill:var(--at);}
+  .diagram-wrap svg .am .s{fill:var(--au);}
+  /* Whiteboard image */
+  .wb-img{width:100%;height:auto;display:block;border-radius:6px;border:1px solid var(--border);}
+  /* Responsive */
+  @media(max-width:520px){
+    .q-card{grid-template-columns:28px 1fr;}
+    .q-card .chip{grid-column:2;margin-top:7px;width:fit-content;}
+    .step-top{flex-direction:column;align-items:flex-start;}
+    .tab-btn{padding:12px 12px;font-size:12px;}
+  }
+</style>
+
+<header class="doc-header">
+  <p class="eyebrow">Mawsons Automation Discovery — Confidential Draft</p>
+  <h1 class="doc-title">Quote &amp; Pricing Workflow:<br>Our Understanding</h1>
+  <p class="doc-subtitle">Prepared by Globant for review with Steven Eeles and the Mawsons team</p>
+  <div class="doc-meta">
+    <span><strong>Date:</strong> 13 October 2026</span>
+    <span><strong>Pilot plant:</strong> Echuca (fixed plant)</span>
+    <span><strong>Version:</strong> v0.2 — for discussion</span>
+    <span><strong>Rod leaves:</strong> End of October 2026</span>
+  </div>
+</header>
+
+<nav class="nav-row">
+  <button class="tab-btn active" onclick="switchTab('process',this)">End-to-End Process</button>
+  <button class="tab-btn" onclick="switchTab('questions',this)">Critical Questions</button>
+  <button class="tab-btn" onclick="switchTab('refs',this)">Source References</button>
+</nav>
+
+<!-- ══════════════ PROCESS TAB ══════════════ -->
+<div id="tab-process" class="tab-pane active">
+  <div class="intro-box">
+    <p>This maps our current understanding of how a quote moves from daily price foundation through to client invoicing. Steps marked <strong style="color:var(--tacit)">Rod's Knowledge</strong> are undocumented tacit steps that must be captured or automated before end of October. Steps marked <strong style="color:var(--unknown)">Owner Unknown</strong> need confirmation from Steven.</p>
+    <p>Please mark anything incorrect. "I don't know — ask [name]" is a completely useful answer.</p>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="chip chip-known">Confirmed</span> Step and owner verified</div>
+    <div class="legend-item"><span class="chip chip-tacit">Rod's Knowledge</span> Undocumented, tacit</div>
+    <div class="legend-item"><span class="chip chip-unknown">Owner Unknown</span> Needs confirmation</div>
+  </div>
+
+  <p class="phase-label">Phase 1 — Price Foundation <span class="phase-pill">Daily</span></p>
+
+  <div class="step"><div class="step-num">1</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Supplier &amp; quarry prices arrive</div><span class="chip chip-known">Confirmed</span></div>
+    <div class="step-detail">Cement from ICL (Adbri-owned) — quoted ~$200/t delivered, invoiced at a different rate. Aggregates and sands from Mawsons quarry — internal source of truth. Admixtures from specialist external suppliers.</div>
+    <div class="step-who">Suppliers → Quarry team → Accounts</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">2</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Rates loaded into Command QC &amp; Material Costing workbook</div><span class="chip chip-unknown">Owner Unknown</span></div>
+    <div class="step-detail">Accounts loads rates from supplier invoices into Command. Rod cross-checks uploaded rates against original supplier quotes to confirm invoice values equal quoted values. Ownership split between Rod and Accounts is not fully confirmed.</div>
+    <div class="step-who">Accounts + Rod (split unclear) — Command QC, Costing workbook</div>
+    <div class="warn-note">⚠ Assumed: IT may play a role in loading or automating this step. Not confirmed.</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">3</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Morning exception reports — quote vs. invoice vs. Command</div><span class="chip chip-tacit">Rod's Knowledge</span></div>
+    <div class="step-detail">Rod runs 3 exception reports from Reporting Services each morning. Goes line by line: does this dollar figure match this dollar figure in Command? Also checks truck allocations and volume data. Pure data-alignment work — the strongest single automation candidate in the entire workflow.</div>
+    <div class="step-who">Rod — Reporting Services + Command QC</div>
+  </div></div>
+
+  <p class="phase-label">Phase 2 — Quote Build</p>
+
+  <div class="step"><div class="step-num">4</div><div class="step-body">
+    <div class="step-top"><div class="step-title">RFQ received and routed</div><span class="chip chip-known">Confirmed</span></div>
+    <div class="step-detail">Client request comes in. Coordinators (2 new starters from November, Damian Cherry taking some ownership) facilitate and route to the technical team, quarries, and other relevant parties. Manual process for small fixed-plant and low-volume quotes.</div>
+    <div class="step-who">Coordinators → Technical team + Quarry</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">5</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Location defined &amp; mix design produced</div><span class="chip chip-known">Confirmed</span></div>
+    <div class="step-detail">Plant selected by proximity to project. Technical team designs the mix — specifying cement (kg/m³), aggregate type and size, sand, SCMs, admixtures. Technical Review Bot is in development but currently manual. The mix code from technical becomes the input to the costing sheet in Step 7.</div>
+    <div class="step-who">Technical team — Technical Review Bot (in progress)</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">6</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Plant feasibility check — can this plant actually make the mix?</div><span class="chip chip-tacit">Rod's Knowledge</span></div>
+    <div class="step-detail">Rod informally validates whether the selected plant can physically supply the specified mix. Example: Echuca has 2 silos (fly ash + cement) so can handle SCMs; Colin Ruby has no second silo so cannot. Technical should get this right, but Rod acts as the backstop — from memory alone, no system support.</div>
+    <div class="step-who">Rod — informal, no system support</div>
+    <div class="warn-note">⚠ Key automation opportunity: build a plant capability matrix (boolean rules per plant) to auto-validate mix designs against plant specs and reject or warn before the costing sheet is built.</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">7</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Costing sheet built — recipe × price + cartage + testing + margin</div><span class="chip chip-tacit">Rod's Knowledge</span></div>
+    <div class="step-detail">Coordinators key the mix code from technical into the costing sheet, which pulls the recipe from Command. They then key each ingredient in by hand. Rod builds the pricing: quarry aggregate delivered price, cement (ICL), admixtures. Adds cartage (~$54.85 at 27km — formula unknown), testing ($3/m³ flat), and margin ($281/m³ in the Coleambally sample — typed in, no formula). This sheet uses prices from Command (Step 2), making it wholly dependent on Step 2 being correct.</div>
+    <div class="step-who">Coordinators (recipe entry) + Rod (pricing) — Costing workbook + Command QC</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">7b</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Rod's second price check — quality gate before review</div><span class="chip chip-tacit">Rod's Knowledge</span></div>
+    <div class="step-detail">Before the costing sheet goes to management review, Rod performs a second check: does the pricing in the sheet correctly reflect Command? Are there any errors from the coordinator's recipe entry? Acts as a second catch after Step 3's morning exception report.</div>
+    <div class="step-who">Rod</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">8</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Costing sheet review — sets margin</div><span class="chip chip-known">Confirmed</span></div>
+    <div class="step-detail">Plant manager or regional manager reviews the sheet. Smaller fixed-plant quotes: a "good to go" email. Larger projects: regional or ops manager reviews margin, volume, pricing vs. comparable recent quotes. Mawsons is targeting 20–22% margin to meet Adbri expectations. Notes added at this step.</div>
+    <div class="step-who">Plant manager / Regional manager / Ops manager</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">9</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Business sign-off</div><span class="chip chip-known">Confirmed</span></div>
+    <div class="step-detail">Regional or ops manager provides final approval. Major projects follow a delegated authority framework including Adbri sign-off. Criteria: margin %, volume, pricing vs. comparable quotes.</div>
+    <div class="step-who">Regional / Ops manager → Adbri (major projects only)</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">10</div><div class="step-body">
+    <div class="step-top"><div class="step-title">PDF quote uploaded &amp; sent to client</div><span class="chip chip-known">Confirmed</span></div>
+    <div class="step-detail">Coordinators upload the PDF (includes 30-day validity note — currently manual, tracked from memory). Email notification goes to project owner, who sends it to the client. Fixed-plant: plant manager sends. Other projects: regional manager or Steven sends. Currently on P drive; agreed target is SharePoint with automated expiry notifications.</div>
+    <div class="step-who">Coordinators (upload) → Project owner (send) — P drive → SharePoint (target)</div>
+  </div></div>
+
+  <p class="phase-label">Phase 3 — Quote to Cash</p>
+
+  <div class="step"><div class="step-num">11</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Client accepts</div><span class="chip chip-known">Confirmed</span></div>
+    <div class="step-detail">Contract for major projects; a plant-level sale request for smaller work. Lead times are short — builders often book slab pours just 2 weeks out. No formal pipeline of unconfirmed work exists.</div>
+    <div class="step-who">Client → Plant or project owner</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">12</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Accepted pricing &amp; recipe entered into Command — project goes live</div><span class="chip chip-unknown">Owner Unknown</span></div>
+    <div class="step-detail">Once the project is awarded, it must be created in Command QC with the correct mix code and pricing so the plant batches to the right recipe and dockets feed correctly into invoicing. Steven believes Rod does this — but not confirmed.</div>
+    <div class="step-who">"Rod, I think" — unconfirmed</div>
+    <div class="warn-note">⚠ Critical gap: if Rod owns this step and leaves end of October, who does it from November? If missed, batching starts with no pricing in Command and every invoice is wrong.</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">13</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Batching — dockets and tickets produced at plant</div><span class="chip chip-known">Confirmed</span></div>
+    <div class="step-detail">Plant batches concrete using the mix code from Command. Dockets and tickets are generated per batch and feed directly into the invoicing system.</div>
+    <div class="step-who">Plant — Command QC</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">14</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Client invoice checked against dockets &amp; tickets</div><span class="chip chip-known">Confirmed</span></div>
+    <div class="step-detail">Accounts checks client invoice against plant dockets and tickets. Rod flags and corrects mismatches in Command. If a supplier has already been paid at the wrong rate, Rod initiates a credit request back through Accounts.</div>
+    <div class="step-who">Accounts + Rod — Command QC + Reporting Services</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">15</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Quote expiry &amp; price-increase tracking</div><span class="chip chip-tacit">Rod's Knowledge</span></div>
+    <div class="step-detail">Rod tracks quote expiration dates and upcoming supplier price increases from memory. Example: Hume Link West has a price increase on 1 January. Quotes carry a 30-day validity note — currently just text, no system enforcement. Target: SharePoint list with automated expiry alerts and AI scanning of PDF quotes for key dates.</div>
+    <div class="step-who">Rod — memory + local P drive</div>
+  </div></div>
+
+  <div class="step"><div class="step-num">16</div><div class="step-body">
+    <div class="step-top"><div class="step-title">Quarry product code ↔ concrete product code translation</div><span class="chip chip-unknown">Owner Unknown</span></div>
+    <div class="step-detail">Raw quarry codes (e.g. "14mm aggregate, Pyramid Hill") do not align with concrete product codes (e.g. "32MPa 20mm stone 80mm slump"). A manual translation step is required. No shared mapping list exists. There may be a database in Command that could support a comparison, but this has not been confirmed.</div>
+    <div class="step-who">Rod or Technical (unclear) — no system support</div>
+  </div></div>
+</div>
+
+<!-- ══════════════ QUESTIONS TAB ══════════════ -->
+<div id="tab-questions" class="tab-pane">
+  <div class="intro-box">
+    <p><strong>P1</strong> questions must be answered before Rod leaves at end of October — they are needed to finish the process map or have no other source after he's gone. <strong>P2</strong> questions can wait for the January session.</p>
+    <p>A voice note or short call is as useful as a written answer. Point to someone else if you don't know.</p>
+  </div>
+
+  <div class="q-group">
+    <p class="q-group-heading">A — Ownership &amp; Handoffs</p>
+    <div class="q-card"><div class="q-id">A1</div><div class="q-body"><div class="q-text">Who enters the accepted pricing and recipe into Command to make a project live (Step 12)? If it's Rod, who takes this over from November — and is there any written instruction for how to do it?</div><div class="q-why">If this step is missed at go-live, batching starts with no pricing in Command and every client invoice will be wrong from day one.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">A2</div><div class="q-body"><div class="q-text">When Rod rejects a mix design at Step 6 (plant can't make it), what does the loop-back look like? Who is told, in what format, and what is the expected turnaround time for a redesign?</div><div class="q-why">We need to map the rework path — and to decide whether the automated feasibility check should hard-block the quote or issue a warning and allow override.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">A3</div><div class="q-body"><div class="q-text">Who are the two incoming replacement coordinators, and have they been briefed on Rod's quality checks (Steps 3, 6, 7b)? Is there any written handover material, or does it all need to be extracted before he leaves?</div><div class="q-why">They are the primary day-to-day users of whatever we build. Their understanding of the current process shapes every UX decision.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">A4</div><div class="q-body"><div class="q-text">Which specific steps does Damian Cherry formally own versus informally assist with? Is Damian the single point of continuity between Rod's departure and the new coordinators coming up to speed?</div><div class="q-why">If Damian is the bridge, his knowledge is a second source we can tap before Rod leaves — especially for the undocumented tacit steps.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">A5</div><div class="q-body"><div class="q-text">When a supplier invoice mismatch is caught (Step 3 or 14), who makes the call: pay and seek a credit, dispute the invoice, or reprice the project? Is Rod the decision-maker or does he flag it and someone else decides?</div><div class="q-why">This determines whether the automated alert needs a human approval point or can auto-generate a credit memo request.</div></div><span class="chip chip-p2">P2</span></div>
+  </div>
+
+  <div class="q-group">
+    <p class="q-group-heading">B — Pricing Rules &amp; Formulas</p>
+    <div class="q-card"><div class="q-id">B1</div><div class="q-body"><div class="q-text">Where does the cartage formula come from? The Coleambally file shows $54.85 at 27km — is there a rate card, a freight table, or is this Rod's own calculation? Who will own this after he leaves?</div><div class="q-why">Cartage is a line item on every quote. If there's no formula and only Rod knows the number, the new coordinators have no basis to price it.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">B2</div><div class="q-body"><div class="q-text">The margin in the Coleambally file is $281/m³ across all three mixes — typed in, no formula. Mawsons has a 20–22% Adbri target. How is that applied today? Is it a fixed dollar amount, a % of cost, or Rod's judgment per project?</div><div class="q-why">Understanding the margin rule unlocks the ability to auto-suggest a margin and flag when a quote falls below the Adbri target.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">B3</div><div class="q-body"><div class="q-text">The Material Costing tab in the workbook shows "1st October 2023" for 7 of 8 plants. Is this data current? Who updates it, how often, and what is the process when a supplier puts through a price change?</div><div class="q-why">If the costing tab has stale prices, every quote built on it is wrong from the start — a data quality risk that must be resolved before automation.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">B4</div><div class="q-body"><div class="q-text">What does the "standard mix from list price" process look like? Is it a completely separate, simpler flow — or the same costing sheet with fewer steps? How many quotes per week are standard vs. bespoke?</div><div class="q-why">If standard mixes are the majority by volume, they may deserve their own simplified flow in the tool rather than a cut-down version of the full process.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">B5</div><div class="q-body"><div class="q-text">The costing workbook contains notes like "Current + $6.80t", "Bulk + 15%", and "plus 50%". What do these adjustments represent — fuel levies, freight surcharges, seasonal adjustments? Who set them and when?</div><div class="q-why">Pricing rules stored as free text won't survive automation — they need to be extracted and formalised as explicit rules.</div></div><span class="chip chip-p2">P2</span></div>
+  </div>
+
+  <div class="q-group">
+    <p class="q-group-heading">C — Data &amp; Systems</p>
+    <div class="q-card"><div class="q-id">C1</div><div class="q-body"><div class="q-text">What are the exact three exception reports Rod runs each morning? What fields are compared in each, what does a "pass" look like, and what does a "fail" trigger? Can we get a sample output from Reporting Services?</div><div class="q-why">These reports are the single clearest automation target. We cannot replicate them without knowing exactly what is being compared and what the output looks like.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">C2</div><div class="q-body"><div class="q-text">API access to Command QC — has Daryl formally approved this? What is the authentication method, and are there any data governance or security requirements we need to meet before we can start pulling data?</div><div class="q-why">The entire automation stack depends on this access. A delay here is a project delay of equivalent length.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">C3</div><div class="q-body"><div class="q-text">Is there an existing mapping table anywhere between quarry product codes (e.g. "14mm aggregate, Pyramid Hill") and concrete product codes (e.g. "32MPa 20mm stone 80mm slump")? Or is this translation entirely in Rod's head?</div><div class="q-why">If no mapping exists, it needs to be built with Rod before he leaves. The two replacement coordinators will not know this.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">C4</div><div class="q-body"><div class="q-text">Is there any existing documentation of which plants stock which aggregates, which SCM silos they have, and their capacity constraints? Or does the plant capability matrix need to be built from scratch through Rod and the plant managers?</div><div class="q-why">This matrix is the foundation for automating the plant feasibility check (Step 6) — it cannot be reconstructed after Rod leaves.</div></div><span class="chip chip-p1">P1</span></div>
+    <div class="q-card"><div class="q-id">C5</div><div class="q-body"><div class="q-text">What format does the technical team use to deliver a mix design today — an email, a document, a mix code from Command? Is the recipe already in Command when it reaches the coordinator, or does the coordinator transcribe it from a document?</div><div class="q-why">The handover between Steps 5 and 7 is where transcription errors enter the costing sheet. Knowing the format tells us where to intercept and automate the data transfer.</div></div><span class="chip chip-p1">P1</span></div>
+  </div>
+
+  <div class="q-group">
+    <p class="q-group-heading">D — Automation Scope &amp; Boundaries</p>
+    <div class="q-card"><div class="q-id">D1</div><div class="q-body"><div class="q-text">After automation, which decisions must stay with a human? Our working assumption: margin sign-off (Steps 8–9), plant feasibility override (Step 6), and supplier dispute resolution (Step 14) remain human-in-the-loop. Do you agree — and are there others?</div><div class="q-why">This shapes the entire system architecture: alert-and-wait, auto-resolve, or hard-block.</div></div><span class="chip chip-p2">P2</span></div>
+    <div class="q-card"><div class="q-id">D2</div><div class="q-body"><div class="q-text">For quote expiry notifications (Step 15): who receives the alert, how far in advance (30 days? 7 days? both?), and what action should the notification prompt — renew, reprice, or escalate?</div><div class="q-why">Notifications without a clear call-to-action get ignored. The intended action defines what the alert must contain and who it goes to.</div></div><span class="chip chip-p2">P2</span></div>
+    <div class="q-card"><div class="q-id">D3</div><div class="q-body"><div class="q-text">Who are the primary day-to-day users of the tool — the two new coordinators, Damian, Rod in January, or all three? What devices and environments do they work in (desktop at a desk, tablet at the plant, phone on the road)?</div><div class="q-why">User experience decisions depend entirely on who the users are and the context they're working in.</div></div><span class="chip chip-p2">P2</span></div>
+  </div>
+</div>
+
+<!-- ══════════════ REFERENCES TAB ══════════════ -->
+<div id="tab-refs" class="tab-pane">
+
+  <!-- Source 1: Meeting -->
+  <div class="ref-section">
+    <p class="ref-heading">R1 — Discovery Meeting Notes</p>
+    <div class="ref-card">
+      <h4>Mawsons: New Use Case — Working Session</h4>
+      <p class="ref-meta">8 October 2026 · Steven Eeles (Mawsons) &amp; Magdalena Viglione Lara (Globant) · AI notes by Gemini</p>
+      <ul class="notes-list">
+        <li><strong>Rod's retirement scope:</strong> Rod retires end of October after 30 years. He is the backstop for pricing, quoting, and costing discrepancies — catches issues between supplier pricing and what Mawsons charges clients. Much of his work is data-vs-data alignment and is automatable. Rod will return in late December/January to support development.</li>
+        <li><strong>Rod's working style:</strong> Rod is averse to direct interviews. Steven is the primary conduit. Rod may be more open by January. Damian Cherry takes some of Rod's responsibilities.</li>
+        <li><strong>Tech stack:</strong> Rod works in Command QC (concrete batching + mix design). Access needed via API. Microsoft Reporting Services (local database) aggregates Command data and ties it to invoicing — also needed.</li>
+        <li><strong>Supplier invoice problem:</strong> ICL (cement) quotes ~$200/t but invoices at ~$280/t. Accounts processes and pays invoices; Rod then catches discrepancies line by line via morning exception reports from Reporting Services. Reconciliation is manual and daily.</li>
+        <li><strong>Plant feasibility problem:</strong> Technical occasionally recommends mixes a specific plant cannot supply — wrong aggregates or no SCM silo. Rod catches this from memory. Automation approach: boolean true/false rules per plant (stocks, silos, capacity).</li>
+        <li><strong>Quote expiry:</strong> Rod tracks expiry dates from memory. Hume Link West has a 1 Jan price increase. Target: SharePoint list + automated notifications + RAG/AI to scan PDF quotes for key dates.</li>
+        <li><strong>Quarry code mismatch:</strong> Quarry product codes (e.g. 14mm aggregate) don't match concrete product codes (e.g. 32MPa 20mm 80mm slump). Manual translation required; no shared mapping list.</li>
+        <li><strong>Supply chain:</strong> Aggregates/sands — Mawsons quarry (internal). Cement — ICL (Adbri-owned exclusively). Admixtures — contracted external suppliers.</li>
+        <li><strong>Team requirements:</strong> Data engineers who maintain a strong focus on UX. Raj to join the next session to map automation vs. human-in-the-loop checkpoints.</li>
+      </ul>
+      <p style="margin-top:10px;font-size:12px;color:var(--muted);">
+        <strong style="color:var(--fg);">Next steps agreed:</strong> Steven to share annotated whiteboard · Magdalena to map full workflow and formulate questions · Group to schedule session with Rod once initial mapping is done.
+      </p>
+    </div>
+  </div>
+
+  <!-- Source 2: Whiteboard -->
+  <div class="ref-section">
+    <p class="ref-heading">R2 — Steven Eeles's Whiteboard (8 Oct 2026)</p>
+    <div class="ref-card">
+      <h4>Microsoft Whiteboard — shared after the working session</h4>
+      <p>Three main clusters: (1) RFQ → Coordinators → Location → Mix Design flow; (2) pricing loop — Quarry Pricing + External Supplier Rates → Costing Sheet → Command → Exception Reports x3; (3) Manual process notes — Rod remembers due dates for price increases, quarry codes don't match concrete codes so technical team must review each time.</p>
+      <p><strong>Tech stack identified:</strong> Command QC + Reporting Services + Exception Reports x3.</p>
+      <div style="background:#F4F3F0;border:1px dashed #DDDBD1;border-radius:8px;padding:24px;text-align:center;color:#6A6960;font-family:'Syne',sans-serif;font-size:13px;">
+  <div style="font-size:24px;margin-bottom:8px;">🖼</div>
+  <strong style="display:block;margin-bottom:4px;">Whiteboard — Steven Eeles, 8 Oct 2026</strong>
+  Available as a separate file (Whiteboard 3.png). Three clusters: RFQ flow, pricing loop, manual process notes.
+</div>
+    </div>
+  </div>
+
+  <!-- Source 3: As-Is Swimlane -->
+  <div class="ref-section">
+    <p class="ref-heading">R3 — As-Is Swimlane Diagram (v0.2)</p>
+    <div class="ref-card">
+      <h4>Mawsons quote and pricing workflow, as is (v0.2)</h4>
+      <p class="ref-meta">Updated 12 October 2026 with Steven Eeles's answers to the discovery questionnaire · Pilot plant: Echuca · Scroll sideways to follow the flow</p>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">
+        <strong style="color:var(--fg);">Legend:</strong>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;"><span style="width:14px;height:10px;border-radius:2px;background:var(--gf);border:1px solid var(--gs);display:inline-block;"></span> Known role</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:12px;"><span style="width:14px;height:10px;border-radius:2px;background:var(--pf);border:1px solid var(--ps);display:inline-block;"></span> Rod, tacit knowledge</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:12px;"><span style="width:14px;height:10px;border-radius:2px;background:var(--af);border:1px dashed var(--as);display:inline-block;"></span> Owner or rule unknown</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;margin-left:12px;"><span style="width:10px;height:10px;transform:rotate(45deg);background:var(--gf);border:1px solid var(--gs);display:inline-block;"></span> Decision</span>
+      </p>
+      <div class="diagram-wrap">
+        <svg width="2560" height="834" viewBox="0 0 2560 834" role="img" aria-label="Mawsons as-is quote and pricing workflow swimlane"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect x="0" y="56" width="2560" height="70" fill="var(--lane)" stroke="var(--border)" stroke-width="0.5"/><text class="ln" x="12" y="88.0">Client</text><text class="ls" x="12" y="103.0">Requests, accepts</text><rect x="0" y="126" width="2560" height="110" fill="none" stroke="var(--border)" stroke-width="0.5"/><text class="ln" x="12" y="171.0">Coordinators</text><text class="ls" x="12" y="186.0">2 new from November</text><text class="ls" x="12" y="200.0">RFQ, Command, PDF</text><rect x="0" y="236" width="2560" height="70" fill="var(--lane)" stroke="var(--border)" stroke-width="0.5"/><text class="ln" x="12" y="268.0">Technical team</text><text class="ls" x="12" y="283.0">Mix design, review bot</text><rect x="0" y="306" width="2560" height="130" fill="none" stroke="var(--border)" stroke-width="0.5"/><text class="ln" x="12" y="354.0">Rod (retiring)</text><text class="ls" x="12" y="369.0">Backstop. Top row is</text><text class="ls" x="12" y="383.0">tacit, undocumented.</text><text class="ls" x="12" y="397.0">Damian takes some</text><rect x="0" y="436" width="2560" height="70" fill="var(--lane)" stroke="var(--border)" stroke-width="0.5"/><text class="ln" x="12" y="461.0">Managers</text><text class="ls" x="12" y="476.0">Plant, regional, ops;</text><text class="ls" x="12" y="490.0">project owners</text><rect x="0" y="506" width="2560" height="70" fill="none" stroke="var(--border)" stroke-width="0.5"/><text class="ln" x="12" y="538.0">Adbri</text><text class="ls" x="12" y="553.0">Major projects only</text><rect x="0" y="576" width="2560" height="70" fill="var(--lane)" stroke="var(--border)" stroke-width="0.5"/><text class="ln" x="12" y="601.0">Accounts</text><text class="ls" x="12" y="616.0">Loads rates,</text><text class="ls" x="12" y="630.0">checks invoices</text><rect x="0" y="646" width="2560" height="70" fill="none" stroke="var(--border)" stroke-width="0.5"/><text class="ln" x="12" y="678.0">Plant</text><text class="ls" x="12" y="693.0">Batching, dockets</text><rect x="0" y="716" width="2560" height="70" fill="var(--lane)" stroke="var(--border)" stroke-width="0.5"/><text class="ln" x="12" y="748.0">Suppliers, quarry</text><text class="ls" x="12" y="763.0">ICL cement, quarries</text><line x1="140" y1="56" x2="140" y2="786" stroke="var(--border)" stroke-width="0.5"/><text class="ph" x="150" y="26">Price foundation, daily</text><line x1="150" y1="38" x2="494" y2="38" stroke="var(--muted)" stroke-width="1"/><text class="ph" x="510" y="26">Quote build</text><line x1="510" y1="38" x2="1574" y2="38" stroke="var(--muted)" stroke-width="1"/><text class="ph" x="1590" y="26">Quote to cash</text><line x1="1590" y1="38" x2="2534" y2="38" stroke="var(--muted)" stroke-width="1"/><path d="M254 751 L322 751 L322 638" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M374 611 L442 611 L442 426" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M442 360 L442 372" fill="none" stroke="var(--line)" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ar)"/><path d="M562 116 L562 178" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M614 204 L636 204" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M682 176 L682 153 L748 153" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M682 232 L682 271 L748 271" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M854 153 L1300 153 L1300 444" fill="none" stroke="var(--line)" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ar)"/><path d="M854 271 L922 271 L922 369" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M878 399 L802 399 L802 298" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M966 399 L1042 399 L1042 230" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1094 204 L1162 204 L1162 372" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1214 399 L1282 399 L1282 444" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1334 471 L1356 471" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1402 499 L1402 514" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1446 471 L1468 471" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1574 471 L1642 471 L1642 230" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1454 541 L1660 541 L1660 230" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1694 204 L1762 204 L1762 444" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1814 471 L1882 471 L1882 121" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1838 91 L1800 91" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M1926 91 L2002 91 L2002 372" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M2054 399 L2122 399 L2122 654" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M2174 681 L2242 681 L2242 638" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M2294 611 L2316 611" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M2406 611 L2428 611" fill="none" stroke="var(--line)" stroke-width="1.3" marker-end="url(#ar)"/><path d="M2362 639 L2362 800 L476 800 L476 426" fill="none" stroke="var(--warn)" stroke-width="1.3" marker-end="url(#ar)"/><g class="g"><rect x="150" y="726" width="104" height="50" rx="5" stroke-width="1"/><text class="t" x="202.0" y="746" text-anchor="middle">Price inputs</text><text class="s" x="202.0" y="763" text-anchor="middle">Suppliers, quarry</text></g><circle cx="150" cy="726" r="9.0" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="150" y="730" text-anchor="middle" style="fill:var(--fg)">1</text><g class="am"><rect x="270" y="586" width="104" height="50" rx="5" stroke-width="2.2" stroke-dasharray="5 3"/><text class="t" x="322.0" y="606" text-anchor="middle">Rates loaded</text><text class="s" x="322.0" y="623" text-anchor="middle">Invoices; IT?</text></g><circle cx="270" cy="586" r="9.0" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="270" y="590" text-anchor="middle" style="fill:var(--fg)">2</text><g class="pu"><rect x="390" y="374" width="104" height="50" rx="5" stroke-width="1"/><text class="t" x="442.0" y="394" text-anchor="middle">Exception run</text><text class="s" x="442.0" y="411" text-anchor="middle">Rates vs quotes</text></g><circle cx="390" cy="374" r="9.0" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="390" y="378" text-anchor="middle" style="fill:var(--fg)">3</text><g class="pu"><rect x="270" y="316" width="104" height="44" rx="5" stroke-width="1"/><text class="t" x="322.0" y="333" text-anchor="middle">Code mapping</text><text class="s" x="322.0" y="349" text-anchor="middle">No shared list</text></g><circle cx="270" cy="316" r="11.5" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="270" y="320" text-anchor="middle" style="fill:var(--fg)">16</text><g class="pu"><rect x="390" y="316" width="104" height="44" rx="5" stroke-width="2.2"/><text class="t" x="442.0" y="333" text-anchor="middle">Other checks</text><text class="s" x="442.0" y="349" text-anchor="middle">Trucks, volumes</text></g><g class="am"><rect x="510" y="316" width="104" height="44" rx="5" stroke-width="2.2" stroke-dasharray="5 3"/><text class="t" x="562.0" y="333" text-anchor="middle">Cartage</text><text class="s" x="562.0" y="349" text-anchor="middle">Formula unknown</text></g><g class="pu"><rect x="630" y="316" width="104" height="44" rx="5" stroke-width="1"/><text class="t" x="682.0" y="333" text-anchor="middle">Quote expiry</text><text class="s" x="682.0" y="349" text-anchor="middle">Notes, 30 days</text></g><circle cx="630" cy="316" r="11.5" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="630" y="320" text-anchor="middle" style="fill:var(--fg)">15</text><g class="g"><rect x="510" y="66" width="104" height="50" rx="5" stroke-width="1"/><text class="t" x="562.0" y="86" text-anchor="middle">Quote request</text><text class="s" x="562.0" y="103" text-anchor="middle">Client</text></g><g class="g"><rect x="510" y="180" width="104" height="48" rx="5" stroke-width="1"/><text class="t" x="562.0" y="200" text-anchor="middle">RFQ received</text><text class="s" x="562.0" y="217" text-anchor="middle">Manual for small</text></g><circle cx="510" cy="180" r="9.0" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="510" y="184" text-anchor="middle" style="fill:var(--fg)">4</text><g class="am"><polygon points="682,176 726,204 682,232 638,204" stroke-width="2.2" stroke-dasharray="5 3"/><text class="t" x="682" y="201" text-anchor="middle">Listed</text><text class="t" x="682" y="215" text-anchor="middle">mix?</text></g><g class="g"><rect x="750" y="134" width="104" height="38" rx="5" stroke-width="2.2"/><text class="t" x="802.0" y="150" text-anchor="middle">List price</text><text class="s" x="802.0" y="164" text-anchor="middle">Standard list</text></g><g class="g"><rect x="750" y="246" width="104" height="50" rx="5" stroke-width="1"/><text class="t" x="802.0" y="266" text-anchor="middle">Mix design</text><text class="s" x="802.0" y="283" text-anchor="middle">Nearest plant</text></g><circle cx="750" cy="246" r="9.0" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="750" y="250" text-anchor="middle" style="fill:var(--fg)">5</text><g class="pu"><polygon points="922,371 966,399 922,427 878,399" stroke-width="1"/><text class="t" x="922" y="396" text-anchor="middle">Plant can</text><text class="t" x="922" y="410" text-anchor="middle">make it?</text></g><circle cx="892" cy="381" r="9" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="892" y="385" text-anchor="middle" style="fill:var(--fg)">6</text><g class="g"><rect x="990" y="180" width="104" height="48" rx="5" stroke-width="2.2"/><text class="t" x="1042.0" y="200" text-anchor="middle">Costing sheet</text><text class="s" x="1042.0" y="217" text-anchor="middle">Keys in recipe</text></g><circle cx="990" cy="180" r="9.0" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="990" y="184" text-anchor="middle" style="fill:var(--fg)">7</text><g class="pu"><rect x="1110" y="374" width="104" height="50" rx="5" stroke-width="2.2"/><text class="t" x="1162.0" y="394" text-anchor="middle">Price check</text><text class="s" x="1162.0" y="411" text-anchor="middle">Second catch</text></g><circle cx="1110" cy="374" r="11.5" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="1110" y="378" text-anchor="middle" style="fill:var(--fg)">7b</text><g class="g"><rect x="1230" y="446" width="104" height="50" rx="5" stroke-width="1"/><text class="t" x="1282.0" y="466" text-anchor="middle">Cost review</text><text class="s" x="1282.0" y="483" text-anchor="middle">Sets margin</text></g><circle cx="1230" cy="446" r="9.0" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="1230" y="450" text-anchor="middle" style="fill:var(--fg)">8</text><g class="g"><polygon points="1402,443 1446,471 1402,499 1358,471" stroke-width="2.2"/><text class="t" x="1402" y="468" text-anchor="middle">Major</text><text class="t" x="1402" y="482" text-anchor="middle">project?</text></g><g class="g"><rect x="1350" y="516" width="104" height="50" rx="5" stroke-width="2.2"/><text class="t" x="1402.0" y="536" text-anchor="middle">Approval</text><text class="s" x="1402.0" y="553" text-anchor="middle">Delegated, Adbri</text></g><g class="g"><rect x="1470" y="446" width="104" height="50" rx="5" stroke-width="1"/><text class="t" x="1522.0" y="466" text-anchor="middle">Sign-off</text><text class="s" x="1522.0" y="483" text-anchor="middle">Email go-ahead</text></g><circle cx="1470" cy="446" r="9.0" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="1470" y="450" text-anchor="middle" style="fill:var(--fg)">9</text><g class="g"><rect x="1590" y="180" width="104" height="48" rx="5" stroke-width="1"/><text class="t" x="1642.0" y="200" text-anchor="middle">Upload PDF</text><text class="s" x="1642.0" y="217" text-anchor="middle">Notifies owner</text></g><circle cx="1590" cy="180" r="11.5" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="1590" y="184" text-anchor="middle" style="fill:var(--fg)">10</text><g class="g"><rect x="1710" y="446" width="104" height="50" rx="5" stroke-width="2.2"/><text class="t" x="1762.0" y="466" text-anchor="middle">Send quote</text><text class="s" x="1762.0" y="483" text-anchor="middle">Project owner</text></g><circle cx="1710" cy="446" r="14.0" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="1710" y="450" text-anchor="middle" style="fill:var(--fg)">10b</text><g class="g"><polygon points="1882,63 1926,91 1882,119 1838,91" stroke-width="1"/><text class="t" x="1882" y="88" text-anchor="middle">Client</text><text class="t" x="1882" y="102" text-anchor="middle">accepts?</text></g><circle cx="1852" cy="73" r="9" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="1852" y="77" text-anchor="middle" style="fill:var(--fg)">11</text><g class="am"><rect x="1950" y="374" width="104" height="50" rx="5" stroke-width="1" stroke-dasharray="5 3"/><text class="t" x="2002.0" y="394" text-anchor="middle">Command entry</text><text class="s" x="2002.0" y="411" text-anchor="middle">Rod, I think</text></g><circle cx="1950" cy="374" r="11.5" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="1950" y="378" text-anchor="middle" style="fill:var(--fg)">12</text><g class="g"><rect x="2070" y="656" width="104" height="50" rx="5" stroke-width="1"/><text class="t" x="2122.0" y="676" text-anchor="middle">Batching</text><text class="s" x="2122.0" y="693" text-anchor="middle">Dockets, tickets</text></g><circle cx="2070" cy="656" r="11.5" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="2070" y="660" text-anchor="middle" style="fill:var(--fg)">13</text><g class="g"><rect x="2190" y="586" width="104" height="50" rx="5" stroke-width="1"/><text class="t" x="2242.0" y="606" text-anchor="middle">Invoice check</text><text class="s" x="2242.0" y="623" text-anchor="middle">Accounts, Rod</text></g><circle cx="2190" cy="586" r="11.5" style="fill:var(--bg);stroke:var(--line)" stroke-width="0.8"/><text class="b" x="2190" y="590" text-anchor="middle" style="fill:var(--fg)">14</text><g class="g"><polygon points="2362,583 2406,611 2362,639 2318,611" stroke-width="1"/><text class="t" x="2362" y="608" text-anchor="middle">Invoice</text><text class="t" x="2362" y="622" text-anchor="middle">matches?</text></g><g class="g"><rect x="2430" y="586" width="84" height="50" rx="5" stroke-width="1"/><text class="t" x="2472.0" y="615.0" text-anchor="middle">Closed</text></g><text class="ts" x="690" y="147" text-anchor="start">Yes</text><text class="ts" x="690" y="254" text-anchor="start">No</text><text class="ts" x="870" y="146" text-anchor="start">Standard mix skips design and costing (who decides is assumed)</text><text class="ts" x="808" y="392" text-anchor="start">No: redesign</text><text class="ts" x="972" y="392" text-anchor="start">Yes</text><text class="ts" x="1450" y="463" text-anchor="start">No</text><text class="ts" x="1410" y="512" text-anchor="start">Yes</text><text class="ts" x="1796" y="95" text-anchor="end">No: lapses after 30 days</text><text class="ts" x="1932" y="83" text-anchor="start">Yes</text><text class="ts" x="2370" y="655" text-anchor="start">No</text><text class="ts" x="1400" y="818" text-anchor="middle">Mismatch: Rod corrects Command, Accounts seeks a credit if already paid (assumed, A5)</text></svg>
+      </div>
+      <p style="margin-top:8px;font-size:12px;color:var(--muted);"><strong style="color:var(--fg);">Changed in v0.2:</strong> Accounts loads rates from invoices (step 2); coordinators key the recipe into the costing sheet (step 7) and Rod price-checks it (7b); managers review, set margin and sign off (steps 8–9); major projects go to delegated authority including Adbri; coordinators upload the PDF and project owner sends it (10, 10b); standard mixes priced from list. <strong style="color:var(--fg);">Still assumed:</strong> who decides a mix is standard; sign-off before upload; Rod entering projects in Command (12); mismatch handling (A5); IT's role in loading rates (C4).</p>
+    </div>
+  </div>
+
+  <!-- Source 4: Coleambally workbook -->
+  <div class="ref-section">
+    <p class="ref-heading">R4 — Coleambally Costing Workbook</p>
+    <div class="ref-card">
+      <h4>Coleambally Concrete Evidence — Darlington Point Sub (1 Oct 2026)</h4>
+      <p class="ref-meta">Excel file · 3 mix designs · ~1,700 m³ total · Used as a sample by Globant for discovery analysis</p>
+      <ul class="notes-list">
+        <li><strong>Mix structure:</strong> Three concrete mixes priced in a single workbook — each row shows ingredients (cement, aggregate, sand, admixtures) with kg/m³ quantities and delivered unit prices.</li>
+        <li><strong>Margin:</strong> $281/m³ applied identically across all three mixes — typed in, no formula. Steven confirmed there is no fixed rule; margin varies by project and he sees opportunity to switch to a % target.</li>
+        <li><strong>Cartage:</strong> $54.85 at 27km — formula unknown. Steven does not know where it comes from.</li>
+        <li><strong>Testing:</strong> $3/m³ flat allowance. Changes to a project-specific figure for major projects.</li>
+        <li><strong>Material Costing tab:</strong> Dated "1st October 2023" for 7 of 8 plants. Contains adjustments like "Current + $6.80t", "Bulk + 15%", "plus 50%" — likely fuel levies or freight surcharges; origin and update process unknown.</li>
+        <li><strong>Recipe source:</strong> Mix code supplied by technical team → coordinators key it into the costing sheet by hand from Command. Manual transcription step.</li>
+        <li><strong>Cement supplier:</strong> ICL only (Adbri-owned). No other cement suppliers used.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+</body></html>

@@ -1,0 +1,471 @@
+<title>RODBOT Project Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky section nav, then four stacked sections: mind map (clickable nodes + detail panel), end-to-end flow, integration diagram, gap register. */
+:root{
+  --bg:#f3f4f2; --surface:#ffffff; --fg:#1d2321; --muted:#5b6662; --line:#d5d9d6;
+  --accent:#0f6b63; --accent-soft:#dcefec;
+  --warn:#a15c07; --warn-soft:#fbecd0;
+  --crit:#b3261e; --crit-soft:#f9dddb;
+  --b1:#2d5fa8; --b2:#0f6b63; --b3:#7a4fa3; --b4:#a15c07; --b5:#3d6b2a; --b6:#b3261e;
+  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --body:'IBM Plex Sans','Helvetica Neue',Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121715; --surface:#1b2220; --fg:#e6ebe8; --muted:#9aa6a1; --line:#33403c;
+  --accent:#4fc4b6; --accent-soft:#16332f;
+  --warn:#e5a444; --warn-soft:#3a2c10;
+  --crit:#ff8b83; --crit-soft:#431a17;
+  --b1:#7fa8e6; --b2:#4fc4b6; --b3:#b896dc; --b4:#e5a444; --b5:#8fc274; --b6:#ff8b83;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121715; --surface:#1b2220; --fg:#e6ebe8; --muted:#9aa6a1; --line:#33403c;
+  --accent:#4fc4b6; --accent-soft:#16332f;
+  --warn:#e5a444; --warn-soft:#3a2c10;
+  --crit:#ff8b83; --crit-soft:#431a17;
+  --b1:#7fa8e6; --b2:#4fc4b6; --b3:#b896dc; --b4:#e5a444; --b5:#8fc274; --b6:#ff8b83;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1120px;margin:0 auto;padding-block:28px 64px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.15}
+h1{font-size:clamp(28px,5vw,44px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700;margin-bottom:6px}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{max-width:68ch;color:var(--muted);margin-top:10px}
+header .facts{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px;font-size:13px;color:var(--muted)}
+header .facts b{color:var(--fg);font-weight:600}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;gap:4px;overflow-x:auto;margin-top:22px;padding-block:6px}
+nav a{color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:6px;font-size:14px;font-weight:500;white-space:nowrap}
+nav a:hover,nav a:focus-visible{background:var(--accent-soft);color:var(--accent);outline:none}
+section{margin-top:44px}
+section>.sub{color:var(--muted);max-width:70ch;margin-bottom:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.scroll{overflow-x:auto}
+
+/* mind map */
+#mm{min-width:900px;width:100%;height:auto;display:block}
+#mm .edge{fill:none;stroke-width:2;opacity:.55}
+#mm .node{cursor:pointer}
+#mm .node rect{fill:var(--surface);stroke-width:1.5}
+#mm .node text{fill:var(--fg);font-family:var(--body);font-size:12.5px}
+#mm .node.branch rect{stroke-width:2.5}
+#mm .node.branch text{font-family:var(--display);font-weight:700;font-size:14px}
+#mm .node.gap rect{fill:var(--crit-soft);stroke:var(--crit)}
+#mm .node:hover rect,#mm .node:focus-visible rect,#mm .node.sel rect{stroke-width:3}
+#mm .node.sel rect{fill:var(--accent-soft)}
+#mm .node.gap.sel rect{fill:var(--crit-soft)}
+#mm .node:focus-visible{outline:none}
+#mm .core rect{fill:var(--accent);stroke:none}
+#mm .core text{fill:#fff;font-family:var(--display);font-weight:800;font-size:18px}
+#mm .core .s{font-size:11px;font-weight:500;font-family:var(--body)}
+#detail{margin-top:12px;padding:16px 18px;display:grid;gap:6px}
+#detail .k{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+#detail p{max-width:75ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:2px solid}
+
+/* flow */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;counter-reset:s}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px;position:relative}
+.step .no{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500}
+.step .who{font-size:12.5px;color:var(--muted)}
+.step .sys{font-family:var(--mono);font-size:12px;background:var(--accent-soft);color:var(--accent);padding:2px 7px;border-radius:4px;align-self:flex-start}
+.step .pain{font-size:13px;background:var(--crit-soft);color:var(--crit);padding:6px 8px;border-radius:5px;margin-top:auto}
+.step .ok{font-size:13px;background:var(--warn-soft);color:var(--warn);padding:6px 8px;border-radius:5px;margin-top:auto}
+.branchnote{margin-top:12px;font-size:13.5px;color:var(--muted);max-width:80ch}
+
+/* integration */
+#ig{min-width:900px;width:100%;height:auto;display:block}
+#ig .nd rect{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+#ig .nd text{fill:var(--fg);font-size:12.5px;font-family:var(--body);font-weight:500}
+#ig .nd .t2{font-size:10.5px;fill:var(--muted);font-weight:400}
+#ig .nd.sys rect{stroke:var(--b1);stroke-width:2}
+#ig .nd.ppl rect{stroke:var(--b3);stroke-width:2}
+#ig .nd.ext rect{stroke:var(--b4);stroke-width:2}
+#ig .nd.bot rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2.5;stroke-dasharray:6 4}
+#ig .nd.bot text{fill:var(--accent);font-family:var(--display);font-weight:800;font-size:15px}
+#ig .e{fill:none;stroke:var(--muted);stroke-width:1.6}
+#ig .e.gap{stroke:var(--crit);stroke-dasharray:5 4}
+#ig .e.new{stroke:var(--accent);stroke-dasharray:2 4;stroke-width:2.2}
+#ig .lb{font-size:10.5px;fill:var(--fg);font-family:var(--mono);text-anchor:middle}
+#ig .lbbg{fill:var(--bg);opacity:.92}
+#ig .lb.gap{fill:var(--crit)}
+#ig .lb.new{fill:var(--accent)}
+.line-key{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.line-key span::before{content:"";display:inline-block;width:26px;border-top:2px solid var(--muted);margin-right:7px;vertical-align:3px}
+.line-key .g::before{border-top:2px dashed var(--crit)}
+.line-key .n::before{border-top:2px dotted var(--accent)}
+
+/* gaps */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.filters button{font:inherit;font-size:13px;font-weight:500;color:var(--fg);background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:5px 14px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.filters button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gaps{display:grid;gap:10px}
+.gap-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:6px;
+  grid-template-columns:auto 1fr;column-gap:14px}
+.gap-card .sev{font-family:var(--mono);font-size:11.5px;font-weight:500;padding:3px 8px;border-radius:4px;align-self:start;text-transform:uppercase;letter-spacing:.06em}
+.sev.high{background:var(--crit-soft);color:var(--crit)}
+.sev.med{background:var(--warn-soft);color:var(--warn)}
+.sev.low{background:var(--accent-soft);color:var(--accent)}
+.gap-card .body{display:grid;gap:4px;min-width:0}
+.gap-card .q{font-weight:600}
+.gap-card .m{font-size:13px;color:var(--muted)}
+.gap-card .m b{color:var(--fg);font-weight:600}
+
+.check{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.check .panel{padding:14px 16px;display:grid;gap:6px}
+.check .tag{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.07em}
+.tag.c{color:var(--accent)} .tag.x{color:var(--warn)} .tag.n{color:var(--crit)}
+footer{margin-top:44px;font-size:12.5px;color:var(--muted);max-width:80ch}
+@media (prefers-reduced-motion:no-preference){.step,.gap-card{transition:border-color .15s}.step:hover,.gap-card:hover{border-color:var(--accent)}}
+@media (max-width:520px){.gap-card{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">Mawsons · quote and pricing automation · pilot plant Echuca</p>
+  <h1>RODBOT Project Map</h1>
+  <p class="lede">One page to see how the people, systems and pricing data fit together, where the process breaks, and what still needs a decision. Built from the Steven Eeles discovery interview and Project Brief v0.2.</p>
+  <div class="facts">
+    <span><b>Problem</b> Rod's tacit pricing checks leave at end of Oct 2026</span>
+    <span><b>Goal</b> capture them, automate or de-risk quote-to-cash checks</span>
+    <span><b>Source</b> 47-min interview, 28 Oct 2026</span>
+  </div>
+</header>
+
+<nav aria-label="Sections">
+  <a href="#map">Mind map</a><a href="#flow">End-to-end flow</a><a href="#integration">Integration</a><a href="#gaps">Gaps to discuss</a><a href="#brief">Brief vs interview</a>
+</nav>
+
+<section id="map">
+  <h2>Mind map</h2>
+  <p class="sub">Select any node for detail. Red nodes are gaps or risks.</p>
+  <div class="panel scroll"><svg id="mm" viewBox="0 0 1100 800" role="img" aria-label="Mind map of the RODBOT project"></svg></div>
+  <div id="detail" class="panel" aria-live="polite"></div>
+  <div class="legend" id="legend"></div>
+</section>
+
+<section id="flow">
+  <h2>End-to-end flow: request to cash</h2>
+  <p class="sub">The quote journey as Steven described it. Orange marks a check that lives in someone's head. Red marks a manual or error-prone step. Map these onto the 16 workflow steps in the brief.</p>
+  <div class="flow" id="flowgrid"></div>
+  <p class="branchnote"><b>Two routes.</b> Standard quotes (driveways, sheds, usually under about 1,000 m³) are handled by the costing team alone. Bigger quotes (dairy floors, subdivisions, power stations) go to the Technical team for specifications, plus cement and aggregate quotes. No formal trigger separates them; technical complexity can override volume.</p>
+</section>
+
+<section id="integration">
+  <h2>How it all connects</h2>
+  <p class="sub">Who and what exchanges data today, where it breaks, and where RODBOT would plug in.</p>
+  <div class="panel scroll"><svg id="ig" viewBox="0 0 1000 470" role="img" aria-label="Integration diagram of people, systems and RODBOT"></svg></div>
+  <div class="line-key"><span>Works today</span><span class="g">Gap or manual step</span><span class="n">Proposed RODBOT link</span></div>
+</section>
+
+<section id="gaps">
+  <h2>Gaps to discuss</h2>
+  <p class="sub">Open questions from the interview and the brief, ranked by how much they block the build.</p>
+  <div class="filters" id="filters" role="group" aria-label="Filter by severity"></div>
+  <div class="gaps" id="gaplist"></div>
+</section>
+
+<section id="brief">
+  <h2>Brief assumptions vs the interview</h2>
+  <div class="check" id="checkgrid"></div>
+</section>
+
+<footer>Transcript was auto-generated, so some figures are unreliable (plant margins were garbled). Treat them as questions, not facts, until confirmed with Steven.</footer>
+</div>
+
+<script>
+/* ---------- Mind map data ---------- */
+var CORE={t:'RODBOT',s:'Rod’s checks, automated'};
+var BR=[
+ {id:'ppl',side:'R',c:'--b1',t:'People',d:'Who holds the knowledge and who makes decisions.',L:[
+  {t:'Steven Eeles',d:'West-of-Victoria costing manager, 4.5 years at Mawsons. Main interviewee and the conduit to Rod. Currently training a new coordinator at Echuca.'},
+  {t:'Rod (retiring)',d:'Covers east Victoria. Source of the tacit checks and the exception reports. Leaves end Oct 2026, back late Dec/Jan. Reported as unwilling to put in effort, so access is indirect.'},
+  {t:'Plant and regional mgrs',d:'Set the final price and decide whether a customer discount applies. Costing only advises. They also push for speed, which is when small mistakes creep in.'},
+  {t:'Technical team',d:'Provide specifications and mix designs, mainly for big quotes. Cement type is usually dictated by them.'},
+  {t:'Chloe, Rob Johns',d:'Chloe (accountant) turns ICR fuel levy into the price spreadsheet. Rob Johns is working on cartage rates and a locked ex-works price.'}]},
+ {id:'sys',side:'R',c:'--b2',t:'Systems',d:'Where data lives today.',L:[
+  {t:'Command QC',d:'First tool opened each day. Quote entry, order checks, customer ID with specific or list pricing. API access unconfirmed (needs Daryl’s approval).'},
+  {t:'Reporting Services',d:'Holds mix and admixture designs, customer pricing and the exception reports. Candidate single source of truth for mixes.'},
+  {t:'Costing workbook (Excel)',d:'Per-plant sheets on P and G drives. Pre-2021 origin, unknown author, formulas from E23 onward unexplained. Target home is SharePoint.'},
+  {t:'Supplier invoices',d:'Arrive about two months behind. Used to double-check ex-works prices.'}]},
+ {id:'wf',side:'R',c:'--b3',t:'Quote workflow',d:'Request to quote sent.',L:[
+  {t:'Request in',d:'Email or website, from external customers.'},
+  {t:'Plant mgr sets price',d:'Coordinators send the request to the plant manager, who arranges a price and returns it.'},
+  {t:'Costing + mix checks',d:'Check mix, build costing sheet, apply margin and discount scenarios.'},
+  {t:'Enter and send',d:'Coordinators key the quote into Command Quote start to finish and resend to the customer. Typing name, phone and email is the most tedious part.'}]},
+ {id:'chk',side:'L',c:'--b4',t:'Tacit checks',d:'The checks Rod does that RODBOT must reproduce.',L:[
+  {t:'Exception reports',d:'Flag missing trucks on dockets, no-price items, manually adjusted prices, odd sales such as ex-yard. Steven checks them 4-6 times a day. Nobody on the team knows the report logic.'},
+  {t:'Mix vs plant capability',d:'Does the mix use cement, aggregate and sand this plant stocks? Example: Cootamundra rock called for at Echuca, which does not stock it.'},
+  {t:'Cement rule of thumb',d:'25 MPa needs about 280 kg of cement, 32 MPa about 320 kg. Adbri cement for Broken Hill, Mildura, Robinvale; ICL for most others. Anything else is questioned.'},
+  {t:'Price re-check',d:'Even after the monthly update, Steven re-checks prices every time.'}]},
+ {id:'prc',side:'L',c:'--b5',t:'Pricing inputs',d:'What goes into a price.',L:[
+  {t:'Cement ex-works',d:'Supplier price at the gate. Does not move with distance.'},
+  {t:'Cartage',d:'Dollars per km paid to trucks that fetch cement. Calculated by the team. No formula captured yet.'},
+  {t:'Fuel levy',d:'ICR sends the levy to Chloe, who puts it into her spreadsheet and sends the price back.'},
+  {t:'Margin and discount',d:'Each plant has its own margin set. Margin drops only when a discount is requested. Brand-new customers get no discount.'}]},
+ {id:'gap',side:'L',c:'--b6',t:'Gaps and risks',d:'Detail in the Gaps section below.',L:[
+  {t:'Stale cost data',gap:1,d:'Costing sheets updated by hand on the 2nd or 3rd of each month. A master mobile sheet was found badly wrong and rebuilt. Prices can be wrong for up to 2 months because invoices lag.'},
+  {t:'Undocumented logic',gap:1,d:'Exception reports, margin formula, cartage formula and quarry-to-concrete code map are all unwritten.'},
+  {t:'Command API unconfirmed',gap:1,d:'Needs Daryl’s approval. Without it RODBOT has to read through Reporting Services only.'},
+  {t:'Key-person dependency',gap:1,d:'Rod leaves end Oct. Step 12 (accepted pricing into Command) has no confirmed owner. Backup if the new coordinator leaves is Christine.'}]}
+];
+var SVGNS='http://www.w3.org/2000/svg';
+function el(n,a,p){var e=document.createElementNS(SVGNS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
+function cv(n){return 'var('+n+')'}
+function wrapT(g,txt,x,y,anchor,max){
+  var words=txt.split(' '),lines=[],cur='';
+  words.forEach(function(w){if((cur+' '+w).trim().length>max&&cur){lines.push(cur);cur=w}else cur=(cur+' '+w).trim()});
+  lines.push(cur);
+  var t=el('text',{x:x,'text-anchor':anchor},g);
+  var off=-(lines.length-1)*7.5;
+  lines.forEach(function(l,i){var s=el('text',{},null);var ts=document.createElementNS(SVGNS,'tspan');ts.setAttribute('x',x);ts.setAttribute('y',y+off+i*15+4.5);ts.textContent=l;t.appendChild(ts)});
+  return lines.length;
+}
+function showDetail(title,kind,d,color){
+  var box=document.getElementById('detail');
+  box.innerHTML='';
+  var k=document.createElement('div');k.className='k';k.textContent=kind;
+  var h=document.createElement('h3');h.textContent=title;if(color)h.style.color=color;
+  var p=document.createElement('p');p.textContent=d;
+  box.appendChild(k);box.appendChild(h);box.appendChild(p);
+}
+(function(){
+  var svg=document.getElementById('mm'),CX=550,CY=400,LH=50,GAP=26,sel=null;
+  var nodes=[];
+  function select(g,title,kind,d,color){
+    if(sel)sel.classList.remove('sel');
+    g.classList.add('sel');sel=g;showDetail(title,kind,d,color);
+  }
+  ['R','L'].forEach(function(side){
+    var list=BR.filter(function(b){return b.side===side});
+    var total=list.reduce(function(a,b){return a+b.L.length*LH},0)+GAP*(list.length-1);
+    var y=CY-total/2;
+    list.forEach(function(b){
+      var h=b.L.length*LH,by=y+h/2,dir=side==='R'?1:-1;
+      var bx=CX+dir*215,lx=CX+dir*(215+95+34);
+      var col=cv(b.c);
+      // edge core -> branch
+      el('path',{class:'edge',stroke:col,d:'M'+CX+' '+CY+' C'+(CX+dir*110)+' '+CY+' '+(bx-dir*110)+' '+by+' '+(bx-dir*0)+' '+by},svg);
+      b.L.forEach(function(l,i){
+        var ly=y+i*LH+LH/2;
+        var inner=CX+dir*330;
+        el('path',{class:'edge',stroke:col,d:'M'+(bx+dir*70)+' '+by+' C'+(bx+dir*110)+' '+by+' '+(inner-dir*40)+' '+ly+' '+inner+' '+ly},svg);
+      });
+      nodes.push({b:b,bx:bx,by:by,lx:lx,y:y,dir:dir,col:col});
+      y+=h+GAP;
+    });
+  });
+  // core
+  var core=el('g',{class:'node core',tabindex:0,role:'button','aria-label':'RODBOT, project core'},svg);
+  el('rect',{x:CX-70,y:CY-34,width:140,height:68,rx:10},core);
+  var t=el('text',{x:CX,y:CY-3,'text-anchor':'middle'},core);t.textContent=CORE.t;
+  var t2=el('text',{x:CX,y:CY+17,'text-anchor':'middle',class:'s'},core);t2.textContent='Rod’s checks, automated';
+  var coreD='A bot that reproduces Rod’s tacit pricing checks: three morning exception reports, plant feasibility of mix designs, a second price check, and quote-expiry and price-increase alerts. Pilot at Echuca. Steven asked for a name other than “Rod bot”.';
+  function act(g,fn){g.addEventListener('click',fn);g.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}})}
+  act(core,function(){select(core,'RODBOT','Project core',coreD)});
+  nodes.forEach(function(n){
+    var b=n.b,dir=n.dir;
+    var g=el('g',{class:'node branch',tabindex:0,role:'button','aria-label':b.t+' branch'},svg);
+    el('rect',{x:n.bx-70,y:n.by-20,width:140,height:40,rx:8,stroke:n.col},g);
+    var tx=el('text',{x:n.bx,y:n.by+5,'text-anchor':'middle'},g);tx.textContent=b.t;
+    act(g,function(){select(g,b.t,'Branch',b.d+' Contains: '+b.L.map(function(l){return l.t}).join(', ')+'.',n.col)});
+    b.L.forEach(function(l,i){
+      var ly=n.y+i*LH+LH/2;
+      var lg=el('g',{class:'node leaf'+(l.gap?' gap':''),tabindex:0,role:'button','aria-label':l.t},svg);
+      var rx=dir>0?CX+330:CX-530;
+      el('rect',{x:rx,y:ly-17,width:200,height:34,rx:6,stroke:n.col},lg);
+      var lt=el('text',{x:rx+10,y:ly+4.5},lg);lt.textContent=l.t;
+      act(lg,function(){select(lg,l.t,(l.gap?'Gap / risk · ':'')+b.t,l.d,l.gap?'var(--crit)':n.col)});
+    });
+  });
+  // fix leaf edge endpoints to box edge
+  var leafEdges=svg.querySelectorAll('.edge');
+  showDetail('RODBOT','Project core · select any node',coreD);
+  core.classList.add('sel');sel=core;
+  var lg=document.getElementById('legend');
+  BR.forEach(function(b){var s=document.createElement('span');var i=document.createElement('i');i.style.borderColor=cv(b.c);s.appendChild(i);s.appendChild(document.createTextNode(b.t));lg.appendChild(s)});
+})();
+
+/* ---------- Flow ---------- */
+var FLOW=[
+ {n:'Request in',who:'Customer → coordinators',sys:'Email / website',txt:'External customers ask for a quote by email or through the website.'},
+ {n:'Route to plant manager',who:'Coordinators → plant manager',sys:'Email',txt:'Plant manager contacts the customer and arranges a price.'},
+ {n:'Pre-checks',who:'Costing coordinator',sys:'Command, Reporting Services',txt:'Plant proximity, volume, current or previous customer, same-banner customer, customer-specific pricing or list price.',ok:'Done from memory; no written checklist.'},
+ {n:'Big-quote branch',who:'Technical team',sys:'Reporting Services',txt:'Specifications requested; cement quote and internal aggregate and sand quotes gathered.',ok:'No formal trigger between standard and big quotes.'},
+ {n:'Mix design check',who:'Costing coordinator',sys:'Command (mix) + costing sheet',txt:'Confirm cement, aggregate, sand and admixtures belong to this plant. Check cement kg against MPa.',pain:'Two screens, re-typed by hand. Several mixes at once invite mistakes.'},
+ {n:'Build costing sheet',who:'Costing coordinator',sys:'Excel workbook',txt:'Select mix and volume. Cement price = ex-works + cartage + fuel levy.',pain:'Inputs updated monthly by hand; invoices lag about 2 months.'},
+ {n:'Margin and discount',who:'Costing → plant / regional mgr',sys:'Excel copy per quote',txt:'Margin only drops on a discount request. Copy of sheet is adjusted to show real margin at, say, $40 off.',ok:'Manager decides; costing only advises.'},
+ {n:'Enter quote',who:'Coordinators',sys:'Command Quote',txt:'Quote entered start to finish and sent to the customer.',pain:'Re-keying name, phone and email is the most tedious step.'},
+ {n:'Daily controls',who:'Costing manager',sys:'Reporting Services',txt:'Exception reports 4-6 times a day. Cash sales, then customer sales and discounts reviewed each morning.',ok:'Report logic is undocumented.'}
+];
+(function(){
+  var g=document.getElementById('flowgrid');
+  FLOW.forEach(function(s,i){
+    var d=document.createElement('div');d.className='step';
+    function add(cls,txt){var e=document.createElement('div');e.className=cls;e.textContent=txt;d.appendChild(e)}
+    add('no','Step '+(i+1));
+    var h=document.createElement('h3');h.textContent=s.n;d.appendChild(h);
+    add('who',s.who);
+    var sy=document.createElement('span');sy.className='sys';sy.textContent=s.sys;d.appendChild(sy);
+    var p=document.createElement('p');p.textContent=s.txt;p.style.fontSize='14px';d.appendChild(p);
+    if(s.pain)add('pain',s.pain);else if(s.ok)add('ok',s.ok);
+    g.appendChild(d);
+  });
+})();
+
+/* ---------- Integration diagram ---------- */
+(function(){
+  var svg=document.getElementById('ig');
+  var W=150,H=56;
+  var N={
+   cust:{x:40,y:30,t:'Customer',s:'external',k:'ext'},
+   plant:{x:300,y:30,t:'Plant / regional mgr',s:'sets price, discount',k:'ppl'},
+   supp:{x:560,y:30,t:'ICL / ICR / Adbri',s:'cement suppliers',k:'ext'},
+   cmd:{x:40,y:200,t:'Command QC',s:'quotes, orders',k:'sys'},
+   coord:{x:300,y:200,t:'Coordinators',s:'Steven, new hires',k:'ppl'},
+   cost:{x:560,y:200,t:'Costing workbook',s:'Excel, P/G drives',k:'sys'},
+   chloe:{x:820,y:200,t:'Chloe (accounts)',s:'fuel levy sheet',k:'ppl'},
+   tech:{x:40,y:370,t:'Technical team',s:'specs, mix designs',k:'ppl'},
+   rep:{x:300,y:370,t:'Reporting Services',s:'mixes, exceptions',k:'sys'},
+   bot:{x:560,y:370,t:'RODBOT',s:'',k:'bot'},
+   rob:{x:820,y:370,t:'Rob Johns',s:'cartage rates',k:'ppl'}
+  };
+  var defs=el('defs',{},svg);
+  ['m','mg','mn'].forEach(function(id){
+    var m=el('marker',{id:id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'},defs);
+    el('path',{d:'M0 0L10 5L0 10z',fill:id==='m'?'var(--muted)':id==='mg'?'var(--crit)':'var(--accent)'},m);
+  });
+  function c(n){return {x:n.x+W/2,y:n.y+H/2}}
+  function clip(a,b){ // point on a's box boundary toward b
+    var ca=c(a),cb=c(b),dx=cb.x-ca.x,dy=cb.y-ca.y;
+    var sx=dx===0?1e9:(W/2)/Math.abs(dx),sy=dy===0?1e9:(H/2)/Math.abs(dy),s=Math.min(sx,sy);
+    return {x:ca.x+dx*s,y:ca.y+dy*s};
+  }
+  var E=[
+   ['cust','coord','quote request','',0],
+   ['coord','plant','price request / decision','',1],
+   ['coord','tech','specs (big quotes)','',0],
+   ['tech','cmd','mix designs','',0],
+   ['cmd','coord','enter quote, customer pricing','',1],
+   ['cmd','rep','data feed','',0],
+   ['rep','coord','mix designs, exception reports','',0],
+   ['coord','cost','manual re-keying','gap',0],
+   ['supp','chloe','fuel levy, prices','',0],
+   ['chloe','cost','monthly price (lagging)','gap',0],
+   ['rob','cost','cartage rate (proposed)','gap',0],
+   ['bot','rep','read mixes + exceptions','new',0],
+   ['bot','cost','check / auto-fill','new',0],
+   ['bot','coord','alerts and flags','new',0]
+  ];
+  var labels=[];
+  E.forEach(function(e){
+    var a=N[e[0]],b=N[e[1]],p=clip(a,b),q=clip(b,a);
+    var cls=e[3]==='gap'?'e gap':e[3]==='new'?'e new':'e';
+    var mk=e[3]==='gap'?'mg':e[3]==='new'?'mn':'m';
+    var at={class:cls,d:'M'+p.x+' '+p.y+' L'+q.x+' '+q.y,'marker-end':'url(#'+mk+')'};
+    if(e[4])at['marker-start']='url(#'+mk+')';
+    el('path',at,svg);
+    labels.push({x:(p.x+q.x)/2,y:(p.y+q.y)/2,t:e[2],k:e[3]});
+  });
+  labels.forEach(function(l){
+    var w=l.t.length*6.1+10;
+    el('rect',{class:'lbbg',x:l.x-w/2,y:l.y-9,width:w,height:16,rx:3},svg);
+    var t=el('text',{class:'lb '+l.k,x:l.x,y:l.y+3},svg);t.textContent=l.t;
+  });
+  Object.keys(N).forEach(function(k){
+    var n=N[k],g=el('g',{class:'nd '+n.k},svg);
+    el('rect',{x:n.x,y:n.y,width:W,height:H,rx:8},g);
+    if(n.s){
+      var a=el('text',{x:n.x+W/2,y:n.y+24,'text-anchor':'middle'},g);a.textContent=n.t;
+      var b=el('text',{x:n.x+W/2,y:n.y+41,'text-anchor':'middle',class:'t2'},g);b.textContent=n.s;
+    }else{
+      var a2=el('text',{x:n.x+W/2,y:n.y+33,'text-anchor':'middle'},g);a2.textContent=n.t;
+    }
+  });
+  // key
+  var ky=450;
+  [['Systems','--b1'],['People','--b3'],['External','--b4'],['RODBOT','--accent']].forEach(function(k,i){
+    var x=40+i*130;
+    el('rect',{x:x,y:ky-9,width:12,height:12,rx:3,fill:'none',stroke:cv(k[1]),'stroke-width':2},svg);
+    var t=el('text',{x:x+18,y:ky+1,style:'font-size:11px;fill:var(--muted);font-family:var(--body)'},svg);t.textContent=k[0];
+  });
+})();
+
+/* ---------- Gaps ---------- */
+var GAPS=[
+ {s:'high',q:'How will cost inputs stay current: lock supplier ex-works prices and get a monthly cartage rate?',m:'Today prices lag up to 2 months and sheets are updated by hand.',o:'Steven, Rob Johns, Chloe',a:'Is Rob’s work covering this, and is it in RODBOT scope?'},
+ {s:'high',q:'Who owns and validates the costing workbook, and do we wrap it or rebuild it?',m:'Pre-2021, unknown author, formulas from E23 on unexplained, master mobile sheet found badly wrong.',o:'Steven, Technical',a:'Get a formula walk-through and a validation owner.'},
+ {s:'high',q:'Where is the logic behind the three exception reports, and can it be reproduced?',m:'Steven uses them 4-6 times a day but did not build them and does not know why they are called exceptions.',o:'Rod (indirect), Reporting Services admin',a:'Find the report definitions in Reporting Services.'},
+ {s:'high',q:'Will Command QC give API access, and who is chasing the approval?',m:'Needs Daryl’s approval. Fallback is read-only through Reporting Services.',o:'Daryl, project lead',a:'Assign a chaser and set a decision date.'},
+ {s:'high',q:'Who owns each workflow step from 1 Nov, especially step 12?',m:'Step 12 owner recorded as “Rod, I think”. Rod leaves end Oct.',o:'Steven, Damian Cherry',a:'Name owners for steps 2, 12 and 16 first.'},
+ {s:'med',q:'What defines a standard quote versus a big quote?',m:'Roughly 1,000 m³ plus technical complexity, but no trigger exists. Steven wants both built.',o:'Steven, Technical',a:'Agree a working rule for the first release.'},
+ {s:'med',q:'Where is the list of what each plant stocks (aggregates, sands, admixtures)?',m:'Needed for the plant-capability check. Mix designs sit in Reporting Services.',o:'Technical, plant managers',a:'Confirm one source of truth for mixes and stock.'},
+ {s:'med',q:'What are the real margin figures per plant, and how do they relate to the 20-22% Adbri target?',m:'Steven said each plant has its own margin set. The transcript figures are garbled.',o:'Steven',a:'Ask for the plant margin table in writing.'},
+ {s:'med',q:'Can the costing sheet be filled automatically from the mix design?',m:'Today two screens and manual typing, error-prone with several mixes.',o:'Project team',a:'Prototype once mix data is readable.'},
+ {s:'med',q:'What does success look like, if speed will not improve?',m:'Steven doubts a tool beats 5-10 minutes per quote. Gain is accuracy and risk reduction. No numeric targets or baseline yet.',o:'Steven, project lead',a:'Define accuracy metrics and capture a baseline.'},
+ {s:'med',q:'Do we replicate Rod’s checks first, or redesign the process?',m:'Brief assumes replicate first. Interview shows no formal rules exist to replicate in several areas.',o:'Project lead',a:'Confirm approach and timeline for Jan validation with Rod.'},
+ {s:'low',q:'How should discounts be handled?',m:'Advisory only: show the customer’s discount and the recalculated margin, the plant or regional manager decides.',o:'Steven',a:'Confirm RODBOT never applies discounts.'},
+ {s:'low',q:'What should the bot be called?',m:'Steven likes the idea but asked for a different name than “Rod bot”.',o:'Team',a:'Pick a name before wider rollout.'},
+ {s:'low',q:'Which materials and sessions are still outstanding?',m:'Steven’s documents, a Command QC walkthrough, a second prototype review with Maggie.',o:'Maggie, Steven',a:'Schedule the walkthrough and request the files.'}
+];
+(function(){
+  var list=document.getElementById('gaplist'),fl=document.getElementById('filters');
+  var cur='all';
+  var opts=[['all','All'],['high','High'],['med','Medium'],['low','Low']];
+  var names={high:'High',med:'Medium',low:'Low'};
+  function render(){
+    list.innerHTML='';
+    GAPS.filter(function(g){return cur==='all'||g.s===cur}).forEach(function(g){
+      var c=document.createElement('div');c.className='gap-card';
+      var s=document.createElement('span');s.className='sev '+g.s;s.textContent=names[g.s];c.appendChild(s);
+      var b=document.createElement('div');b.className='body';
+      var q=document.createElement('div');q.className='q';q.textContent=g.q;b.appendChild(q);
+      var m=document.createElement('div');m.className='m';m.textContent=g.m;b.appendChild(m);
+      var o=document.createElement('div');o.className='m';
+      var b1=document.createElement('b');b1.textContent='Ask: ';o.appendChild(b1);o.appendChild(document.createTextNode(g.o+'  ·  '));
+      var b2=document.createElement('b');b2.textContent='Next: ';o.appendChild(b2);o.appendChild(document.createTextNode(g.a));
+      b.appendChild(o);c.appendChild(b);list.appendChild(c);
+    });
+    Array.prototype.forEach.call(fl.children,function(btn){btn.setAttribute('aria-pressed',btn.dataset.f===cur)});
+  }
+  opts.forEach(function(o){
+    var btn=document.createElement('button');btn.type='button';btn.dataset.f=o[0];
+    var n=o[0]==='all'?GAPS.length:GAPS.filter(function(g){return g.s===o[0]}).length;
+    btn.textContent=o[1]+' ('+n+')';
+    btn.addEventListener('click',function(){cur=o[0];render()});fl.appendChild(btn);
+  });
+  render();
+})();
+
+/* ---------- Brief vs interview ---------- */
+var CH=[
+ {k:'c',tag:'Confirmed',t:'Plant-capability check',d:'Cootamundra rock at Echuca is a real example of a mix that does not belong at a plant.'},
+ {k:'c',tag:'Confirmed',t:'Stale costing data',d:'Worse than assumed: a master mobile sheet was wrong enough to be rebuilt from scratch.'},
+ {k:'c',tag:'Confirmed',t:'Rod as single point of failure',d:'Team is learning by following Rod; little is written down.'},
+ {k:'x',tag:'Changed',t:'Success measure',d:'Speed gains are unlikely. Accuracy and de-risking are the value.'},
+ {k:'x',tag:'Changed',t:'Scope of quote types',d:'Steven wants both standard and big quotes in a full-scale build.'},
+ {k:'n',tag:'New',t:'Cost-input freshness',d:'Ex-works lock-in, monthly cartage rate and fuel levy flow are a scope item not in the brief.'},
+ {k:'n',tag:'New',t:'Margin by plant',d:'Per-plant margin table needed, alongside the 20-22% Adbri target.'},
+ {k:'n',tag:'New',t:'Costing re-keying',d:'Auto-fill from mix design is a candidate feature.'}
+];
+(function(){
+  var g=document.getElementById('checkgrid');
+  CH.forEach(function(x){
+    var p=document.createElement('div');p.className='panel';
+    var a=document.createElement('div');a.className='tag '+x.k;a.textContent=x.tag;p.appendChild(a);
+    var h=document.createElement('h3');h.textContent=x.t;p.appendChild(h);
+    var d=document.createElement('p');d.style.fontSize='14px';d.style.color='var(--muted)';d.textContent=x.d;p.appendChild(d);
+    g.appendChild(p);
+  });
+})();
+</script>
