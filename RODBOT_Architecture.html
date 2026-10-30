@@ -93,6 +93,19 @@ footer { color: var(--muted); font-size: 13px; max-width: 78ch; }
   </header>
 
   <section>
+    <h2>Design summary</h2>
+    <p>RODBOT is a read-only checker that sits beside Command QC. It reproduces the pricing checks Rod does from memory, and it flags problems to people instead of changing prices.</p>
+    <ul class="dec">
+      <li><b>Replicate first, redesign later <span class="tag">[A]</span></b><span>Copy Rod's checks as they are today. Changing the quote process waits until the checks are written down and trusted.</span></li>
+      <li><b>Read-only, beside Command QC</b><span>Replacing Command QC is out of scope. RODBOT reads and flags; it never writes quotes or prices.</span></li>
+      <li><b>Reporting Services first</b><span>It already holds mixes, customer pricing and the exception reports. Command QC API access is a later upgrade, not a dependency.</span></li>
+      <li><b>People keep the decision</b><span>Plant and regional managers still set price and discount. RODBOT shows the margin against the 20-22% Adbri target.</span></li>
+      <li><b>Build order <span class="tag">[A]</span></b><span>Step owners and exception reports first, then plant feasibility, expiry and price-rise alerts, and the margin flag.</span></li>
+      <li><b>Pilot at Echuca <span class="tag">[A]</span></b><span>Release 1 covers one plant. Capture Rod's knowledge before 31 Oct; build and validate with him in January.</span></li>
+    </ul>
+  </section>
+
+  <section>
     <h2>Today: the price travels through re-typing</h2>
     <figure>
       <div class="scroll">
