@@ -1,0 +1,263 @@
+<title>RODBOT Architecture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; each diagram is a figure that scrolls sideways on phones, with plain tables below. */
+:root {
+  --bg: #eceff0;
+  --surf: #fafbfb;
+  --fg: #1b2427;
+  --muted: #56646a;
+  --line: #bcc6ca;
+  --accent: #0a6c74;
+  --warn: #9a5700;
+  --crit: #b3261e;
+  --tint: rgba(10, 108, 116, 0.07);
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12181a; --surf: #1a2124; --fg: #e5eaeb; --muted: #9aa8ad; --line: #3b474c;
+    --accent: #4dc4cc; --warn: #e3a24c; --crit: #ff8f85; --tint: rgba(77, 196, 204, 0.09);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12181a; --surf: #1a2124; --fg: #e5eaeb; --muted: #9aa8ad; --line: #3b474c;
+  --accent: #4dc4cc; --warn: #e3a24c; --crit: #ff8f85; --tint: rgba(77, 196, 204, 0.09);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+header { display: flex; flex-direction: column; gap: 10px; max-width: 70ch; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 600; font-size: 40px; line-height: 1.05; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 24px; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 70ch; }
+.note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; color: var(--muted); font-size: 14px; }
+section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.scroll { overflow-x: auto; background: var(--surf); border: 1px solid var(--line); border-radius: 6px; }
+svg { display: block; width: 100%; min-width: 760px; height: auto; }
+figcaption { color: var(--muted); font-size: 14px; max-width: 78ch; }
+
+/* diagram marks */
+.n rect { fill: var(--surf); stroke: var(--fg); stroke-width: 1.4; }
+.n.warn rect { stroke: var(--warn); stroke-width: 2; }
+.n.crit rect { stroke: var(--crit); stroke-width: 2; }
+.n.soft rect { stroke: var(--line); stroke-dasharray: none; }
+.n text { fill: var(--fg); font-family: var(--body); font-size: 13px; font-weight: 600; }
+.n text.s { font-size: 11px; font-weight: 400; fill: var(--muted); }
+.e { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.e.warn { stroke: var(--warn); stroke-dasharray: 6 4; }
+.e.crit { stroke: var(--crit); stroke-width: 2; }
+.e.acc { stroke: var(--accent); stroke-width: 2; }
+.m-ok { fill: var(--muted); } .m-warn { fill: var(--warn); } .m-crit { fill: var(--crit); } .m-acc { fill: var(--accent); }
+.lb { font-family: var(--body); font-size: 11.5px; fill: var(--muted); }
+.lb.warn { fill: var(--warn); } .lb.crit { fill: var(--crit); } .lb.acc { fill: var(--accent); font-weight: 500; }
+.bg { fill: var(--surf); }
+.box { fill: var(--tint); stroke: var(--accent); stroke-width: 1.5; }
+.boxlabel { font-family: var(--mono); font-size: 11.5px; fill: var(--accent); letter-spacing: 0.04em; }
+.chk rect { fill: var(--surf); stroke: var(--accent); stroke-width: 1.4; }
+.chk text { fill: var(--fg); font-size: 13px; font-weight: 600; font-family: var(--body); }
+.chk text.s { font-size: 11px; font-weight: 400; fill: var(--muted); }
+.note-svg { font-family: var(--body); font-size: 11px; fill: var(--crit); }
+
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--mono); font-size: 11.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+td:first-child { font-weight: 600; white-space: nowrap; }
+.tag { font-family: var(--mono); font-size: 11.5px; color: var(--warn); }
+ul.dec { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+ul.dec li { background: var(--surf); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; min-width: 0; }
+ul.dec b { font-weight: 600; }
+ul.dec span { color: var(--muted); }
+footer { color: var(--muted); font-size: 13px; max-width: 78ch; }
+@media (max-width: 520px) { h1 { font-size: 32px; } }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">Mawsons · quote and pricing automation · pilot plant Echuca</div>
+    <h1>RODBOT Architecture</h1>
+    <p>How a quote and its price move through people and systems today, and where RODBOT would read, check and flag. Two diagrams, built from Project Brief v0.2 and the Steven Eeles interview.</p>
+    <p class="note">Gate 1 was approved on assumptions. Everything marked <span class="tag">[A]</span> is unvalidated, and the target diagram is a proposal, not a design.</p>
+  </header>
+
+  <section>
+    <h2>Today: the price travels through re-typing</h2>
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 960 470" role="img" aria-label="Current state: a quote request passes between coordinators, plant managers, a hand-maintained costing workbook and Command QC, with prices re-typed by hand and the only automated checks being exception reports that Rod and Steven review and nobody can explain.">
+          <defs>
+            <marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="m-ok" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="m-warn" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="a-crit" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="m-crit" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+
+          <!-- edges -->
+          <path class="e" d="M125 86 L125 150" marker-end="url(#a-ok)"/>
+          <path class="e" d="M200 150 L400 86" marker-start="url(#a-ok)" marker-end="url(#a-ok)"/>
+          <path class="e" d="M835 86 L835 150" marker-end="url(#a-ok)"/>
+          <path class="e warn" d="M740 178 L575 178" marker-end="url(#a-warn)"/>
+          <path class="e warn" d="M220 178 L385 178" marker-end="url(#a-warn)"/>
+          <path class="e warn" d="M125 206 L125 270" marker-end="url(#a-warn)"/>
+          <path class="e" d="M125 390 L125 326" marker-end="url(#a-ok)"/>
+          <path class="e" d="M220 298 L385 298" marker-end="url(#a-ok)"/>
+          <path class="e" d="M430 270 L200 206" marker-end="url(#a-ok)"/>
+          <path class="e crit" d="M480 326 L480 390" marker-end="url(#a-crit)"/>
+
+          <!-- edge labels -->
+          <text class="lb" x="133" y="122">quote request</text>
+          <rect class="bg" x="244" y="108" width="112" height="16" rx="3"/>
+          <text class="lb" x="300" y="120" text-anchor="middle">price, discount</text>
+          <text class="lb" x="843" y="122">fuel levy, prices</text>
+          <text class="lb warn" x="657" y="168" text-anchor="middle">monthly, ~2 mo lag</text>
+          <text class="lb warn" x="302" y="168" text-anchor="middle">re-typed by hand</text>
+          <text class="lb warn" x="133" y="242">re-key quote</text>
+          <text class="lb" x="133" y="362">mix designs</text>
+          <text class="lb" x="302" y="288" text-anchor="middle">data feed</text>
+          <rect class="bg" x="280" y="230" width="70" height="16" rx="3"/>
+          <text class="lb" x="315" y="242" text-anchor="middle">mix designs</text>
+          <text class="lb crit" x="488" y="362">3 exception reports</text>
+
+          <!-- nodes -->
+          <g class="n"><rect x="30" y="30" width="190" height="56" rx="28"/><text x="125" y="56" text-anchor="middle">Customer</text><text class="s" x="125" y="72" text-anchor="middle">external</text></g>
+          <g class="n"><rect x="385" y="30" width="190" height="56" rx="28"/><text x="480" y="56" text-anchor="middle">Plant / regional mgr</text><text class="s" x="480" y="72" text-anchor="middle">sets price, discount</text></g>
+          <g class="n"><rect x="740" y="30" width="190" height="56" rx="28"/><text x="835" y="56" text-anchor="middle">ICL / ICR / Adbri</text><text class="s" x="835" y="72" text-anchor="middle">cement suppliers</text></g>
+
+          <g class="n"><rect x="30" y="150" width="190" height="56" rx="28"/><text x="125" y="176" text-anchor="middle">Coordinators</text><text class="s" x="125" y="192" text-anchor="middle">Steven, new hires</text></g>
+          <g class="n warn"><rect x="385" y="150" width="190" height="56" rx="4"/><text x="480" y="176" text-anchor="middle">Costing workbook</text><text class="s" x="480" y="192" text-anchor="middle">Excel, P and G drives</text></g>
+          <g class="n"><rect x="740" y="150" width="190" height="56" rx="28"/><text x="835" y="176" text-anchor="middle">Chloe (accounts)</text><text class="s" x="835" y="192" text-anchor="middle">fuel levy sheet</text></g>
+
+          <g class="n"><rect x="30" y="270" width="190" height="56" rx="4"/><text x="125" y="296" text-anchor="middle">Command QC</text><text class="s" x="125" y="312" text-anchor="middle">quotes, orders</text></g>
+          <g class="n"><rect x="385" y="270" width="190" height="56" rx="4"/><text x="480" y="296" text-anchor="middle">Reporting Services</text><text class="s" x="480" y="312" text-anchor="middle">mixes, pricing, reports</text></g>
+
+          <g class="n"><rect x="30" y="390" width="190" height="56" rx="28"/><text x="125" y="416" text-anchor="middle">Technical team</text><text class="s" x="125" y="432" text-anchor="middle">specs, mix designs</text></g>
+          <g class="n crit"><rect x="385" y="390" width="190" height="56" rx="28"/><text x="480" y="416" text-anchor="middle">Exception review</text><text class="s" x="480" y="432" text-anchor="middle">Steven / Rod, 4-6x a day</text></g>
+          <text class="note-svg" x="592" y="414">Report logic undocumented.</text>
+          <text class="note-svg" x="592" y="430">Rod leaves end Oct 2026.</text>
+
+          <!-- key -->
+          <text class="lb" x="740" y="286" style="font-weight:500">Key</text>
+          <path class="e" d="M740 304 L790 304" marker-end="url(#a-ok)"/><text class="lb" x="800" y="308">works today</text>
+          <path class="e warn" d="M740 326 L790 326" marker-end="url(#a-warn)"/><text class="lb warn" x="800" y="330">manual or lagging</text>
+          <path class="e crit" d="M740 348 L790 348" marker-end="url(#a-crit)"/><text class="lb crit" x="800" y="352">undocumented logic</text>
+          <rect x="740" y="364" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.4" style="color:var(--fg)"/><text class="lb" x="776" y="375">system</text>
+          <rect x="740" y="386" width="26" height="14" rx="7" fill="none" stroke="currentColor" stroke-width="1.4" style="color:var(--fg)"/><text class="lb" x="776" y="397">person or team</text>
+        </svg>
+      </div>
+      <figcaption>Mix designs and prices cross between systems only through a coordinator typing them again. Cost inputs reach the workbook monthly and about two months behind the supplier invoices. The one automated control is the set of three exception reports, which Steven reads 4-6 times a day without knowing how they were built.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Proposed: RODBOT reads, checks and flags</h2>
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 980 500" role="img" aria-label="Target state: RODBOT reads Reporting Services, a plant capability matrix, Command QC and the costing workbook, runs four checks, and sends flags to coordinators, a named alert recipient and the plant or regional manager, without writing back to Command QC.">
+          <defs>
+            <marker id="b-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="m-ok" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="b-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="m-warn" d="M0 0L10 5L0 10z"/></marker>
+            <marker id="b-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="m-acc" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+
+          <!-- RODBOT container -->
+          <rect class="box" x="335" y="44" width="330" height="404" rx="8"/>
+          <text class="boxlabel" x="335" y="34">RODBOT · READS AND FLAGS, NEVER WRITES BACK</text>
+
+          <!-- source edges -->
+          <path class="e" d="M190 98 L350 98" marker-end="url(#b-ok)"/>
+          <path class="e" d="M190 110 L350 188" marker-end="url(#b-ok)"/>
+          <path class="e warn" d="M190 198 L350 198" marker-end="url(#b-warn)"/>
+          <path class="e warn" d="M190 298 L350 298" marker-end="url(#b-warn)"/>
+          <path class="e warn" d="M190 310 L350 388" marker-end="url(#b-warn)"/>
+          <path class="e warn" d="M190 398 L350 398" marker-end="url(#b-warn)"/>
+          <path class="e warn" d="M190 386 L350 308" marker-end="url(#b-warn)"/>
+
+          <!-- output edges -->
+          <path class="e acc" d="M650 98 L800 150" marker-end="url(#b-acc)"/>
+          <path class="e acc" d="M650 198 L800 170" marker-end="url(#b-acc)"/>
+          <path class="e acc" d="M650 298 L800 298" marker-end="url(#b-acc)"/>
+          <path class="e acc" d="M650 398 L800 398" marker-end="url(#b-acc)"/>
+
+          <!-- labels -->
+          <text class="lb" x="270" y="88" text-anchor="middle">report data</text>
+          <rect class="bg" x="234" y="140" width="72" height="16" rx="3"/>
+          <text class="lb" x="270" y="152" text-anchor="middle">mix designs</text>
+          <text class="lb warn" x="270" y="214" text-anchor="middle">plant stock</text>
+          <text class="lb warn" x="270" y="288" text-anchor="middle">quote dates</text>
+          <rect class="bg" x="200" y="325" width="72" height="16" rx="3"/>
+          <text class="lb warn" x="236" y="337" text-anchor="middle">quote prices</text>
+          <rect class="bg" x="196" y="353" width="86" height="16" rx="3"/>
+          <text class="lb warn" x="239" y="365" text-anchor="middle">supplier prices</text>
+          <text class="lb warn" x="270" y="414" text-anchor="middle">cost build</text>
+          <rect class="bg" x="690" y="107" width="82" height="16" rx="3"/>
+          <text class="lb acc" x="731" y="119" text-anchor="middle">daily summary</text>
+          <rect class="bg" x="668" y="175" width="124" height="16" rx="3"/>
+          <text class="lb acc" x="730" y="187" text-anchor="middle">warn or block (TBC)</text>
+          <text class="lb acc" x="725" y="288" text-anchor="middle">expiry, price rise</text>
+          <text class="lb acc" x="725" y="388" text-anchor="middle">margin flag</text>
+
+          <!-- sources -->
+          <g class="n"><rect x="20" y="68" width="170" height="60" rx="4"/><text x="105" y="94" text-anchor="middle">Reporting Services</text><text class="s" x="105" y="111" text-anchor="middle">mixes, pricing, reports</text></g>
+          <g class="n warn"><rect x="20" y="168" width="170" height="60" rx="4"/><text x="105" y="194" text-anchor="middle">Plant capability matrix</text><text class="s" x="105" y="211" text-anchor="middle">new, source TBC [A]</text></g>
+          <g class="n warn"><rect x="20" y="268" width="170" height="60" rx="4"/><text x="105" y="294" text-anchor="middle">Command QC</text><text class="s" x="105" y="311" text-anchor="middle">API access unconfirmed</text></g>
+          <g class="n warn"><rect x="20" y="368" width="170" height="60" rx="4"/><text x="105" y="394" text-anchor="middle">Costing workbook</text><text class="s" x="105" y="411" text-anchor="middle">stale, moving to SharePoint</text></g>
+
+          <!-- checks -->
+          <g class="chk"><rect x="350" y="60" width="300" height="76" rx="4"/><text x="366" y="92">Exception reports</text><text class="s" x="366" y="112">3 reports run daily; match Rod's results [A]</text></g>
+          <g class="chk"><rect x="350" y="160" width="300" height="76" rx="4"/><text x="366" y="192">Plant feasibility</text><text class="s" x="366" y="212">mix vs plant stock, before costing sheet [A]</text></g>
+          <g class="chk"><rect x="350" y="260" width="300" height="76" rx="4"/><text x="366" y="292">Expiry and price-rise alerts</text><text class="s" x="366" y="312">30-day quote validity; supplier increases [A]</text></g>
+          <g class="chk"><rect x="350" y="360" width="300" height="76" rx="4"/><text x="366" y="392">Margin flag</text><text class="s" x="366" y="412">every quote vs 20-22% Adbri target [A]</text></g>
+
+          <!-- outputs -->
+          <g class="n"><rect x="800" y="130" width="160" height="60" rx="30"/><text x="880" y="156" text-anchor="middle">Coordinators</text><text class="s" x="880" y="173" text-anchor="middle">exceptions, mix warnings</text></g>
+          <g class="n"><rect x="800" y="268" width="160" height="60" rx="30"/><text x="880" y="294" text-anchor="middle">Named recipient [A]</text><text class="s" x="880" y="311" text-anchor="middle">expiry, price rises</text></g>
+          <g class="n"><rect x="800" y="368" width="160" height="60" rx="30"/><text x="880" y="394" text-anchor="middle">Plant / regional mgr</text><text class="s" x="880" y="411" text-anchor="middle">sees flag, decides</text></g>
+
+          <!-- key -->
+          <path class="e" d="M20 474 L70 474" marker-end="url(#b-ok)"/><text class="lb" x="80" y="478">readable today</text>
+          <path class="e warn" d="M220 474 L270 474" marker-end="url(#b-warn)"/><text class="lb warn" x="280" y="478">depends on an open decision</text>
+          <path class="e acc" d="M500 474 L550 474" marker-end="url(#b-acc)"/><text class="lb acc" x="560" y="478">RODBOT output to a person</text>
+        </svg>
+      </div>
+      <figcaption>The only solid input is Reporting Services, which already holds mixes, customer pricing and the exception reports. Every dashed input waits on a decision. If Command QC refuses API access, the quote dates and prices have to come through Reporting Services too. RODBOT never writes to Command QC; managers keep the pricing decision.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>What changes, check by check</h2>
+    <div class="scroll" style="background:transparent;border:0">
+      <table>
+        <thead><tr><th>Check</th><th>Today</th><th>With RODBOT <span class="tag">[A]</span></th></tr></thead>
+        <tbody>
+          <tr><td>Exception reports</td><td>Steven opens them 4-6 times a day. Nobody knows the report logic.</td><td>Run automatically each morning and compared with Rod's results on a sample.</td></tr>
+          <tr><td>Plant feasibility</td><td>Checked from memory across two screens, for example rock the plant does not stock.</td><td>Mix design checked against a capability matrix before the costing sheet is built.</td></tr>
+          <tr><td>Quote expiry</td><td>No tracker with a named owner.</td><td>30-day expiry and supplier price rises alert a named recipient.</td></tr>
+          <tr><td>Margin</td><td>Plant sets its own margin; costing advises on discounts.</td><td>Margin against the 20-22% Adbri target flagged on every quote. The manager still decides.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Decisions the target depends on</h2>
+    <ul class="dec">
+      <li><b>Command QC API access</b><span>Needs Daryl's approval and nobody is chasing it yet. Fallback is read-only through Reporting Services.</span></li>
+      <li><b>Cost inputs that stay current</b><span>7 of 8 costing tabs are dated 1 Oct 2023. No cartage formula, no margin formula, no quarry-to-concrete code map.</span></li>
+      <li><b>Where plant capability lives</b><span>The matrix does not exist yet. Mix designs sit in Reporting Services; plant stock has no confirmed source.</span></li>
+      <li><b>Owners for steps 2, 12 and 16</b><span>Step 12, accepted pricing into Command, is recorded as "Rod, I think". Rod leaves end Oct 2026.</span></li>
+    </ul>
+  </section>
+
+  <footer>Sources: RODBOT_Project_Brief_and_Scope_Handoff.md, RODBOT_Discovery_Plan.md, RODBOT_Project_Map.html. The interview transcript was auto-generated, so figures from it are questions until Steven confirms them.</footer>
+</main>
