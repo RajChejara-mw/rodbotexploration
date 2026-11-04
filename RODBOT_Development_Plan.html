@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RODBOT Development Plan</title>
+<style>
+:root{--bg:#fff;--fg:#1c2430;--mut:#5d6b7c;--line:#dde3ea;--card:#f5f7fa;--acc:#1f6feb;--crit:#c62828;--ok:#2e7d32;--warn:#b26a00;--chip:#e8eefc}
+@media (prefers-color-scheme:dark){:root{--bg:#12161c;--fg:#e6ebf1;--mut:#9aa7b6;--line:#2a323d;--card:#1a2029;--acc:#5aa2ff;--crit:#ff6b6b;--ok:#6fcf7a;--warn:#f0b04a;--chip:#22304a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1280px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:36px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}h3{font-size:15px;margin:18px 0 4px}
+p{margin:6px 0}.mut{color:var(--mut)}
+.note{background:var(--card);border-left:4px solid var(--warn);padding:10px 14px;border-radius:4px;margin:14px 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px}
+.kpi b{display:block;font-size:24px}.kpi span{color:var(--mut);font-size:13px}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--card);font-weight:600;white-space:nowrap;position:sticky;top:0}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.cp td:first-child{border-left:4px solid var(--crit)}
+.chip{display:inline-block;padding:0 7px;margin:1px 2px 1px 0;border-radius:9px;background:var(--chip);font-size:12px;white-space:nowrap}
+.chip.q{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.High{color:var(--ok)}.Med{color:var(--warn)}.Low{color:var(--crit)}
+.bar{height:9px;border-radius:5px;background:var(--acc)}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+input,select,button{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
+button{cursor:pointer;background:var(--acc);color:#fff;border-color:var(--acc)}
+.id{font-weight:600;white-space:nowrap}
+.sm{font-size:13px}
+.det{color:var(--mut);font-size:13px;margin-top:2px}
+ul{padding-left:20px;margin:6px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px}
+code{background:var(--card);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<main>
+<h1>RODBOT: Development Plan</h1>
+<p class="mut">Release 1 (Echuca pilot) · v0.1 draft · 2026-11-02 · Built from Project Brief v0.2, Architecture, Process Understanding v0.2, Discovery Plan, Stakeholder Map</p>
+
+<div class="note"><b>Read this first.</b> Gate 1 is approved on assumptions only, and several inputs only Rod knew (cartage, margin, report logic, code map) are not captured yet. Every task below that needs them lists the open query that blocks it. Effort is in <b>person-days (pd)</b> and is my estimate (±30%), not yet validated by an engineer who knows Mawsons' systems. The tech stack is an assumption (see Q4).</div>
+
+<div class="kpis" id="kpis"></div>
+
+<h2>1. Scope and design principles</h2>
+<div class="cols">
+<div class="card"><b>What RODBOT is [A]</b><ul>
+<li>A read-only checker beside Command QC. It never writes quotes or prices.</li>
+<li>Reproduces Rod's checks: 3 exception reports, plant feasibility, quote expiry and supplier price-rise alerts, margin vs 20-22% Adbri target, plus a step-owner register.</li>
+<li>Replicate first, redesign later. Managers keep the pricing decision.</li></ul></div>
+<div class="card"><b>Priority order [A]</b><ol style="padding-left:20px;margin:6px 0">
+<li>Step ownership (criterion 4) and exception reports (criterion 1)</li>
+<li>Plant feasibility (criterion 2)</li>
+<li>Expiry and price-rise alerts (criterion 3)</li>
+<li>Margin flag (criterion 5)</li></ol></div>
+<div class="card"><b>Out of scope for release 1 [A]</b><ul>
+<li>Replacing Command QC, writing back to it</li>
+<li>Plants other than Echuca</li>
+<li>Process redesign, pipeline of unconfirmed work</li>
+<li>Command QC API integration (optional task W1-7, only if Daryl approves)</li></ul></div>
+</div>
+
+<h2>2. Assumed technical approach (confirm via Q4, Q5)</h2>
+<div class="cols">
+<div class="card"><b>Architecture</b><ul>
+<li><b>Ingest:</b> scheduled read-only jobs pull from Reporting Services (SQL read-only account or SSRS report exports) and the costing workbook (SharePoint / Graph API) into RODBOT's own store.</li>
+<li><b>Store:</b> PostgreSQL or SQL Server schema: quotes, mixes, plants, prices, check runs, alerts, step owners, audit log.</li>
+<li><b>Engine:</b> rules modules, one per check, each versioned and configurable (tolerances, thresholds, recipients).</li>
+<li><b>Output:</b> daily summary email/Teams, alerts to named recipients, web dashboard evolved from <code>Mawsons_Ops_Prototype.html</code>.</li></ul></div>
+<div class="card"><b>Assumed stack [A]</b><ul>
+<li>Backend: Python 3.12 + FastAPI, scheduled worker (Azure Functions timer or container cron)</li>
+<li>Frontend: React + TypeScript, ported from the prototype screens</li>
+<li>Auth: Microsoft Entra ID SSO with roles (Coordinator, Manager, Admin)</li>
+<li>Hosting: Mawsons Azure tenant (Microsoft shop assumed from SSRS / SharePoint)</li>
+<li>CI/CD: GitHub Actions or Azure DevOps; IaC in Bicep/Terraform</li></ul></div>
+<div class="card"><b>Engineering rules</b><ul>
+<li>Read-only DB credentials, enforced in code and by the DB account.</li>
+<li>Every check run is logged with inputs and result (audit and parallel-run comparison).</li>
+<li>BDD acceptance criteria per check (task W9-1), tests written before rules logic.</li>
+<li>Rules are config + tests, not hard-coded: Rod's logic will be corrected in January.</li>
+<li>Follows Globant SSDLC (security review in W8-1).</li></ul></div>
+</div>
+
+<h2>3. Effort by workstream</h2>
+<div class="wrap"><table id="wsTable"><thead><tr><th>Workstream</th><th>Tasks</th><th>Effort (pd)</th><th></th><th>Criterion served</th></tr></thead><tbody></tbody></table></div>
+
+<h2>4. Phases</h2>
+<div class="wrap"><table id="phTable"><thead><tr><th>Phase</th><th>Goal</th><th>Tasks</th><th>Effort (pd)</th><th>Exit condition</th></tr></thead><tbody></tbody></table></div>
+
+<h2>5. Critical path</h2>
+<p class="sm mut">Computed from the dependencies and client waits below, assuming each task can start as soon as its dependencies finish (unlimited people). Waits are calendar-style lead times, counted as days.</p>
+<div id="critical" class="card"></div>
+
+<h2>6. Task backlog (with dependencies)</h2>
+<div class="tools">
+<select id="fWs"><option value="">All workstreams</option></select>
+<select id="fPh"><option value="">All phases</option></select>
+<select id="fCp"><option value="">All tasks</option><option value="1">Critical path only</option><option value="q">Blocked by open query</option></select>
+<input id="fTx" placeholder="Search tasks" size="24">
+<button id="csv">Download CSV (for Jira import)</button>
+</div>
+<p class="sm mut"><span class="chip">W1-2</span> = depends on that task (hard). <span class="chip q">Q5</span> = blocked until that open query is answered. Red left bar = critical path. Start / Finish are earliest working-day offsets from kickoff.</p>
+<div class="wrap"><table id="tasks"><thead><tr><th>ID</th><th>Task and approach</th><th>Acceptance criteria</th><th>Role</th><th>Effort</th><th>Wait</th><th>Start</th><th>Finish</th><th>Depends on</th><th>Open queries</th><th>Conf.</th></tr></thead><tbody></tbody></table></div>
+
+<h2>7. Open queries</h2>
+<p class="sm mut">Each has a default assumption so work can start; the tasks it blocks are listed. Owner is who must answer.</p>
+<div class="wrap"><table id="qs"><thead><tr><th>ID</th><th>Question</th><th>Owner</th><th>Blocks</th><th>Default assumption if unanswered</th><th>Needed by</th></tr></thead><tbody></tbody></table></div>
+
+<h2>8. Team and resourcing view</h2>
+<div class="wrap"><table id="roles"><thead><tr><th>Role</th><th>Effort (pd)</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+<p id="staff" class="sm"></p>
+
+<h2>9. Risks</h2>
+<ul>
+<li><b>Rod's logic is unrecoverable before January.</b> Rules in W2/W6 are built from SSRS report definitions and sample outputs, so correctness is proven by parallel run (W2-6), not by interview.</li>
+<li><b>No Reporting Services access.</b> W0-4 has a 5-10 day wait and gates all build. Start the request in week 1.</li>
+<li><b>Stale costing data</b> (7 of 8 plants dated 1 Oct 2023) makes margin and price-rise checks misleading. W1-5 flags staleness rather than hiding it.</li>
+<li><b>Interview-sourced figures unverified</b> ($54.85 cartage at 27 km, $281/m³ margin come from an auto-generated transcript). Q22.</li>
+<li><b>New coordinators unavailable for UAT</b> until November training completes.</li>
+</ul>
+</main>
+
+<script>
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const WS={W0:"Unblock and decisions",W1:"Platform and data",W2:"Exception reports",W3:"Step ownership",W4:"Plant feasibility",W5:"Expiry and price-rise alerts",W6:"Margin flag",W7:"Notifications and UI",W8:"Security and operations",W9:"Validation and pilot"};
+const WSC={W0:"enabler",W1:"enabler",W2:"1 Exception reports",W3:"4 Named owners",W4:"2 Plant feasibility",W5:"3 Expiry / price rise",W6:"5 Margin flag",W7:"all (delivery)",W8:"all (NFR)",W9:"all (proof)"};
+const PH={P0:["Unblock","Access, decisions, environments, sample data","Reporting Services access granted, owners named, repo and CI live"],
+P1:["Foundations","Data model, ingestion, notifications, auth","Daily ingest runs end to end into RODBOT store"],
+P2:["Checks 1 and 4","Exception reports and step-owner register, the priority pair","Rules match Rod's/SSRS outputs on sample; every step has an owner"],
+P3:["Checks 2, 3, 5","Plant feasibility, expiry and price-rise, margin flag","Each check passes BDD tests on historical data"],
+P4:["UI and hardening","Dashboard, quote detail, security, observability, deployment","Production deploy ready, security review passed"],
+P5:["Validate and pilot","UAT, Rod validation in January, pilot go-live","Pilot live at Echuca, baseline compared with targets"]};
+// [id,phase,title,approach,acceptance,effort,wait,deps,role,queries,conf]
+const T=[
+["W0-1","P0","Confirm what Rod knowledge was captured and log the gaps","Review P1 answers (A1-C5) received via Steven, 8 Oct session and PDF transcript. Produce a knowledge-gap register: item, source, confidence, who can confirm.","Gap register exists; every item has an owner and a January fallback.",1,0,[],"BA",["Q1","Q22"],"High"],
+["W0-2","P0","Validate Gate 1 success criteria and numeric targets","Walk the 5 [A] criteria with Steven; turn into measurable targets (hours saved, errors avoided, report match %).","Criteria signed by Steven with numbers; Gate 1 moves from provisional to approved.",1,3,[],"BA",["Q2","Q20"],"Med"],
+["W0-3","P0","Confirm stack, hosting, security constraints with Mawsons IT","Short workshop with IT: tenant, allowed cloud, network path to Reporting Services, identity provider, data classification.","Written decision record (ADR) on stack and hosting.",1.5,2,[],"Tech lead",["Q4","Q18","Q23"],"Med"],
+["W0-4","P0","Obtain read-only access to Reporting Services","Request service account, network/VPN route and a data dictionary. Prefer a read-only SQL login; fall back to SSRS report export subscriptions.","Test query returns data from a dev machine using the read-only account.",1,7,["W0-3"],"Tech lead",["Q5"],"Low"],
+["W0-5","P0","Raise Command QC API approval with Daryl (non-blocking)","Send a one-page request: read-only scope, purpose, data fields. Track the answer; build does not wait on it.","Daryl's decision recorded (approved, refused or deferred).",0.5,0,["W0-2"],"BA",["Q3"],"Med"],
+["W0-6","P0","Name owners for steps 2, 12 and 16 (and Damian's formal scope)","Decision session with Steven using the stakeholder map; record owner and backup per step.","Owners named for all 16 steps or an explicit unowned flag with escalation.",0.5,2,["W0-2"],"BA",["Q14"],"Med"],
+["W0-7","P0","Repository, environments, CI/CD and secrets","Mono-repo, dev/test/prod, pipeline with lint, tests, scan; secrets in Key Vault; IaC.","Hello-world service deploys to dev through pipeline.",3,0,["W0-3"],"DevOps",["Q4"],"High"],
+["W0-8","P0","Collect sample data pack","30 days of the 3 exception report outputs, SSRS report definitions (.rdl), sample mixes, Echuca plant stock, costing workbook, recent quotes with PDFs.","Data pack in a secure share, indexed, with a README.",2,3,["W0-4"],"BA",["Q6","Q9"],"Med"],
+["W1-1","P1","Reporting Services data discovery","Map tables/views for mixes, customer pricing, quote dates, dockets, exception reports. Produce data dictionary and gaps list.","Data dictionary covers every field RODBOT needs; gaps listed with fallbacks.",3,0,["W0-4"],"Dev (BE)",["Q5"],"Med"],
+["W1-2","P1","Canonical data model and migrations","Entities: Quote, Mix, Plant, PlantCapability, SupplierPrice, CostLine, CheckRun, Exception, Alert, StepOwner, AuditLog. Migration tooling.","Schema migrates cleanly from empty; ER diagram committed.",3,0,["W1-1","W0-7"],"Dev (BE)",[],"High"],
+["W1-3","P1","Reporting Services ingestion connector and scheduler","Idempotent daily pull (morning, before reports are needed), incremental where possible, retry and dead-letter, row-count reconciliation.","Daily job loads sample data twice with identical result; failure raises an alert.",4,0,["W1-2"],"Dev (BE)",["Q5","Q16"],"Med"],
+["W1-4","P1","Costing workbook ingestion","Parse Excel from P drive / SharePoint (Graph API): per-plant tabs, recipe x price, cartage, testing, margin. Tolerate layout differences between plants.","Echuca and Coleambally workbooks parse into CostLine rows with a validation report.",4,0,["W0-8","W1-2"],"Dev (BE)",["Q9","Q7"],"Med"],
+["W1-5","P1","Data freshness and quality monitor","Flag costing tabs older than a threshold (7 of 8 are dated 1 Oct 2023), missing mix codes, unmatched plant names. Show on dashboard.","Stale tabs listed with age; check results carry a data-freshness warning.",2,0,["W1-3","W1-4"],"Dev (BE)",["Q9"],"High"],
+["W1-6","P1","Audit log of every check run","Store inputs hash, rule version, output, run time. Used for parallel-run comparison and incident review.","Any alert can be traced to its inputs and rule version.",1.5,0,["W1-2"],"Dev (BE)",[],"High"],
+["W1-7","P4","(Optional) Command QC API connector","Only if Daryl approves. Replace Reporting Services fallback for quote dates and prices. Same interface as W1-3.","Connector passes the same reconciliation as W1-3.",5,0,["W0-5","W1-3"],"Dev (BE)",["Q3"],"Low"],
+["W2-1","P2","Reverse-engineer the 3 exception reports","Read .rdl definitions and SQL; diff against sample outputs. Document fields, joins, tolerances and pass/fail for each report.","Spec per report with worked examples reproduced by hand on sample rows.",4,0,["W0-8","W1-1"],"Dev (BE) + BA",["Q6","Q1"],"Low"],
+["W2-2","P2","Rule specification sign-off","Present rules as plain-language cases to Steven/Damian. Record corrections.","Written sign-off (or list of changes) from Steven or Damian.",1.5,3,["W2-1"],"BA",["Q6"],"Med"],
+["W2-3","P2","Report 1 rules: quote vs invoice vs Command dollar match","Implement as rule module with tolerance config. Output exception rows with reason code.","Matches reference output on sample 100% of rows, or differences explained.",4,0,["W2-2","W1-3"],"Dev (BE)",[],"Med"],
+["W2-4","P2","Report 2 rules: truck allocations","Rule module per spec; reason codes; link to docket.","Matches reference output on sample.",3,0,["W2-2","W1-3"],"Dev (BE)",[],"Med"],
+["W2-5","P2","Report 3 rules: volume data","Rule module per spec.","Matches reference output on sample.",3,0,["W2-2","W1-3"],"Dev (BE)",[],"Med"],
+["W2-6","P2","Parallel-run comparison harness","Run RODBOT beside the current reports for 2 weeks; auto-diff and publish a daily match rate. Rod's January review uses this.","Daily diff report; match rate trend; unexplained differences below agreed threshold.",3,0,["W2-3","W2-4","W2-5","W1-6"],"Dev (BE)",["Q2"],"Med"],
+["W2-7","P2","Exception triage workflow","States: open, acknowledged, resolved, false positive, with comment and owner. Tolerance config UI for admins.","Coordinator can action an exception; history retained.",2,0,["W2-3","W1-2"],"Dev (BE)",[],"High"],
+["W3-1","P2","Step-owner register (data and admin screen)","16 steps, owner, backup, effective date, status (confirmed or assumed). Seeded from process map v0.2.","Admin edits owners; change history kept; seeded with all 16 steps.",3,0,["W1-2","W0-6"],"Dev (FE+BE)",["Q14"],"High"],
+["W3-2","P2","Unowned-step and handover alerts","Dashboard widget and weekly notice for steps without owner or with owner on leave/changed.","Steps 2, 12, 16 show owner by 1 Nov equivalent date; unowned shows red.",1,0,["W3-1","W7-1"],"Dev (BE)",[],"High"],
+["W3-3","P2","Knowledge capture notes per step","Attach runbook text (what, how, where, failure modes) to each step. First draft from Process Understanding v0.2; Rod adds in January.","Each Rod-knowledge step (3, 6, 7, 7b) has a draft runbook note.",2,0,["W0-1","W3-1"],"BA",["Q1"],"Med"],
+["W4-1","P3","Plant capability matrix schema","Boolean and numeric rules per plant: silos (cement, fly ash/SCM), admixture dosing, stocked aggregates and sizes, max batch. Versioned with effective dates.","Schema reviewed by Technical team; Echuca and Colin Ruby counter-example expressible.",2,0,["W0-1","W1-2"],"BA + Dev",["Q11","Q20"],"Med"],
+["W4-2","P3","Capture Echuca capability data","Workshop with Technical team and plant manager; load into matrix; define maintenance owner.","Echuca matrix signed by Technical; maintenance owner named.",2,5,["W4-1"],"BA",["Q11"],"Low"],
+["W4-3","P3","Mix design ingestion and parsing","Parse cement kg/m³, aggregate type and size, sand, SCMs, admixtures from the mix source.","Parses 95%+ of sample mix codes; unparsed codes listed.",3,0,["W1-3"],"Dev (BE)",["Q13"],"Med"],
+["W4-4","P3","Feasibility rules engine (warn or block)","Evaluate mix vs plant capability before costing sheet. Output pass, warn, block with reason. Behaviour set by config.","Known cases: Echuca with SCM passes; Colin Ruby with SCM fails with reason.",4,0,["W4-2","W4-3"],"Dev (BE)",["Q12"],"Med"],
+["W4-5","P3","Interface to Technical Review Bot","Define input/output contract so RODBOT feasibility result can be consumed by, or reuse, the bot. Skip if bot not ready.","Contract agreed and mocked; no duplicated rules.",2,0,["W4-4"],"Dev (BE)",["Q13"],"Low"],
+["W4-6","P3","Feasibility back-test on historical mixes","Run against past quotes; review false positives with Technical.","False-positive rate agreed; rule fixes applied.",2,0,["W4-4"],"QA",[],"Med"],
+["W5-1","P3","Quote expiry model","30-day validity from sent date; extensions; status (live, expiring, expired). Source of sent date per Q15.","Expiry date correct on 20 sampled quotes.",2,0,["W1-3"],"Dev (BE)",["Q15"],"Med"],
+["W5-2","P3","Expiry alerts with named recipients","Scheduler: alert at T-7, T-2, expired. Recipient = quote owner, escalation to step owner.","Alerts arrive to correct person; no duplicates; snooze supported.",3,0,["W5-1","W3-1","W7-1"],"Dev (BE)",["Q16"],"Med"],
+["W5-3","P3","Supplier price-change detection","Compare successive price loads per supplier and material (ICL cement first); detect increases, record effective date.","Known past increase is detected on replay.",3,0,["W1-3","W1-4"],"Dev (BE)",["Q17","Q9"],"Med"],
+["W5-4","P3","Price-rise impact on open quotes","For each live quote, recompute material cost with the new price and show delta and margin impact.","Impact shown per quote; totals reconcile to costing sheet within tolerance.",3,0,["W5-3","W5-1","W6-2"],"Dev (BE)",[],"Med"],
+["W5-5","P3","Alert recipient and action configuration","Admin screen: who gets which alert, channel, quiet hours, required action text.","Config change takes effect without deploy.",1.5,0,["W5-2","W7-5"],"Dev (FE+BE)",["Q16"],"High"],
+["W6-1","P3","Obtain margin and cartage rules","Get cartage formula (distance-based, ~$54.85 at 27 km in sample), testing $3/m³, how margin is applied. From Steven, Damian, or workbook formulas.","Written rules with worked examples that reproduce the Coleambally sample.",1,5,["W0-1"],"BA",["Q7","Q8","Q22"],"Low"],
+["W6-2","P3","Cost build-up service","Recipe x price + cartage + testing -> cost per m³, per plant. Reconciles with costing sheet.","Reproduces costing sheet totals for 10 sampled quotes within tolerance.",4,0,["W6-1","W1-4"],"Dev (BE)",["Q7","Q9"],"Low"],
+["W6-3","P3","Margin flag vs 20-22% Adbri target","Compute margin on every quote; flag below, within and above band; thresholds configurable; shows data-freshness warning.","Flag correct on sample; band editable by admin.",2,0,["W6-2","W1-5"],"Dev (BE)",["Q8"],"Med"],
+["W6-4","P3","Quarry-to-concrete code map and cartage distances","Table mapping quarry product codes to concrete mix material codes, plus plant-to-site distance source.","Map covers Echuca mixes; unmapped codes listed.",3,5,["W6-1"],"BA + Dev",["Q10"],"Low"],
+["W7-1","P1","Notification service","Email (and Teams if allowed) with templates, throttling, delivery log, daily morning summary.","Test summary delivered to 3 recipients; failures logged.",3,0,["W0-7"],"Dev (BE)",["Q16"],"High"],
+["W7-2","P4","Dashboard v1 (port prototype)","Port Dashboard, Exception Reports and Quotes screens from the prototype onto real APIs.","Screens load real data; matches approved prototype layout.",6,0,["W1-2","W2-7","W7-4"],"Dev (FE)",[],"Med"],
+["W7-3","P4","Plant Matrix screen","View and edit capability matrix with history; role restricted.","Technical user edits matrix; change logged.",2,0,["W4-2","W7-4"],"Dev (FE)",[],"High"],
+["W7-4","P1","Authentication and roles","Entra ID SSO; roles Coordinator, Manager, Admin; API authorisation.","Role matrix enforced by tests.",3,0,["W0-3","W0-7"],"Dev (BE)",["Q4"],"High"],
+["W7-5","P4","Quote detail view with all flags","One screen per quote: exception, feasibility, expiry, price-rise impact, margin flag, history.","Quote opens with every check result and its explanation.",3,0,["W6-3","W5-1","W4-4","W7-2"],"Dev (FE)",[],"Med"],
+["W8-1","P4","Security review and hardening","SSDLC checklist, SAST/dependency scan, secrets review, prove read-only DB access, data classification.","No high findings open; sign-off recorded.",2,0,["W7-4","W1-3"],"Security",["Q18"],"High"],
+["W8-2","P4","Observability and job alerting","Structured logs, metrics, dashboards; alert on failed/late ingest or check runs.","Simulated failure alerts the team within 15 minutes.",2,0,["W1-3","W7-1"],"DevOps",[],"High"],
+["W8-3","P4","Production deployment and runbook","Prod environment, rollback, backup, operations runbook, support model.","Prod deploy from pipeline; runbook reviewed by owner.",3,0,["W8-1","W8-2"],"DevOps",["Q23"],"High"],
+["W9-1","P1","BDD acceptance criteria per check","Gherkin scenarios for each of the 5 criteria using sample data; basis of test automation.","Scenarios approved by Steven; automated where possible.",2,0,["W0-2"],"QA + BA",["Q2"],"High"],
+["W9-2","P5","Echuca UAT","Coordinators and Damian run real quotes through RODBOT for 2 weeks; log defects.","All critical defects closed; users sign off.",3,0,["W2-6","W3-2","W4-6","W5-5","W6-3","W7-5","W8-3"],"QA",["Q19"],"Med"],
+["W9-3","P5","Training and user guide for coordinators","Short guide and 45 min session; includes how to action exceptions.","Coordinators complete a task checklist unaided.",2,0,["W9-2"],"BA",["Q19"],"High"],
+["W9-4","P5","Rod validation session (January)","Replay his checks against RODBOT output; capture corrections; update rules.","Rod confirms or corrects each of the 5 checks; rule changes shipped.",1.5,0,["W2-6","W6-3"],"BA + Dev",["Q21","Q1"],"Low"],
+["W9-5","P5","Pilot go-live and 2-week hypercare","Switch on at Echuca; daily review of exceptions and alerts; fix issues.","Pilot live, no severity 1 open, daily summary used by coordinators.",4,0,["W9-3","W9-4"],"Dev + QA",["Q23"],"Med"],
+["W9-6","P5","Measure against baseline and targets","Compare with RODBOT_Baseline_Metrics.xlsx and W0-2 targets; report to Steven.","Report shows each target as met, missed or not yet measurable.",1.5,0,["W9-5"],"BA",["Q2"],"High"]
+];
+// [id,question,owner,default,neededBy]
+const Q=[
+["Q1","Did the P1 questions (A1-C5) reach Rod via Steven before he left, and what answers came back?","Steven Eeles","Treat as unanswered; build from artifacts and re-ask in January.","Week 1"],
+["Q2","What are the numeric targets (hours saved, errors avoided, report match %), the budget and the end date?","Steven Eeles","Targets: 95% report match on sample, every step owned; no fixed date.","Week 1"],
+["Q3","Is Command QC API access approved by Daryl, and who is chasing it?","Daryl / Steven","Refused or deferred; use Reporting Services only.","Before W1-7"],
+["Q4","Which stack, cloud tenant and hosting model are allowed? Who hosts RODBOT?","Mawsons IT","Mawsons Azure tenant, stack as in section 2.","Week 1"],
+["Q5","How can we read Reporting Services: direct read-only SQL, SSRS API or report exports? Is there a data dictionary?","Mawsons IT","Read-only SQL login to the reporting database.","Week 1"],
+["Q6","What are the 3 exception reports exactly: fields, pass/fail rules, tolerances, a sample of output? (C1)","Steven / Damian","Derive from .rdl definitions and sample output.","Before W2-1"],
+["Q7","What is the cartage formula (distance bands, rate, minimums)? (B1)","Steven / Damian","Use a lookup from observed samples, flagged as low confidence.","Before W6-2"],
+["Q8","How is margin applied (per m³ typed, % of cost)? Which price base is compared to the 20-22% target? (B2)","Steven / managers","Margin % = (price - cost) / price on costing-sheet figures.","Before W6-3"],
+["Q9","Are costing-tab prices current, and who refreshes the 7 of 8 tabs dated 1 Oct 2023? (B3)","Accounts / Steven","Treat as stale; show warning on every dependent check.","Before W1-4"],
+["Q10","Where is the quarry-to-concrete code map, or must it be built? (C3)","Technical team","Build manually for Echuca mixes only.","Before W6-4"],
+["Q11","Where does plant capability data live, who maintains it, and for which plants? (C4)","Technical team","Build matrix for Echuca; Technical team owns it.","Before W4-2"],
+["Q12","If a mix is infeasible for a plant, should RODBOT warn or block?","Steven / Technical","Warn only in release 1.","Before W4-4"],
+["Q13","How does the mix design reach the coordinator, and what is the Technical Review Bot's status and interface? (C5)","Technical team","Mix read from Reporting Services; bot ignored.","Before W4-3"],
+["Q14","Who owns steps 2, 12 and 16 after Rod, and what is Damian's formal scope? (A1, A4)","Steven Eeles","Damian owns 12 on an interim basis, marked assumed.","Week 1"],
+["Q15","Where do quote sent date and validity live (Command, P drive PDFs, SharePoint) and can validity be extended?","Coordinators / Steven","Use sent date from Command; 30 days; no extensions.","Before W5-1"],
+["Q16","Who receives each alert, via what channel (email, Teams), and at what morning time (AEST/AEDT)?","Steven / coordinators","Email to quote owner at 06:30 local, escalate to step owner.","Before W7-1"],
+["Q17","Which supplier price feeds count for price-rise alerts: ICL cement only, quarry, admixtures; invoice or quote price (cement quoted ~$200/t, invoiced differently)?","Accounts","ICL cement invoice prices only.","Before W5-3"],
+["Q18","What data classification applies (commercial pricing, Adbri-related), and any residency rules?","Mawsons IT / Adbri","Treat as confidential commercial; in-region hosting.","Before W8-1"],
+["Q19","Who is the product owner and which coordinators and managers are available for UAT and training?","Steven","Steven is product owner; Damian leads UAT.","Before W9-2"],
+["Q20","Confirm release 1 covers Echuca only (fixed plant) and the out-of-scope list.","Steven","Echuca only.","Week 1"],
+["Q21","When is Rod back and what format will his validation take (call, workshop, written)?","Steven / Rod","One 2-hour session in the first week back.","Before W9-4"],
+["Q22","Are figures from the auto-generated transcript correct ($54.85 at 27 km, $281/m³ margin, $3/m³ testing, ICL ~$200/t)?","Steven","Treat as unverified examples, not test oracles.","Before W6-1"],
+["Q23","Who operates RODBOT after the pilot (support model, on-call, change control)?","Steven / Globant delivery","Globant supports 4 weeks post go-live, then handover.","Before W8-3"]
+];
+const byId=Object.fromEntries(T.map(t=>[t[0],t]));
+// schedule (earliest start / finish), topological
+const ES={},EF={},pred={};
+function fin(id,stack=[]){
+ if(EF[id]!==undefined)return EF[id];
+ if(stack.includes(id))throw new Error('cycle '+stack.concat(id).join('>'));
+ const t=byId[id];let s=0,p=null;
+ t[7].forEach(d=>{if(!byId[d])throw new Error('missing '+d+' in '+id);const f=fin(d,stack.concat(id));if(f>=s){s=f;p=d}});
+ ES[id]=s+t[6];EF[id]=ES[id]+t[5];pred[id]=p;return EF[id];
+}
+T.forEach(t=>fin(t[0]));
+// critical path: back from max finish
+let end=T.reduce((a,t)=>EF[t[0]]>EF[a]?t[0]:a,T[0][0]);
+const cp=[];for(let x=end;x;x=pred[x])cp.unshift(x);
+const cpSet=new Set(cp);
+const total=T.reduce((a,t)=>a+t[5],0);
+const q1=new Set(T.filter(t=>t[9].length).map(t=>t[0]));
+const round=x=>Math.round(x*10)/10;
+// KPIs
+document.getElementById('kpis').innerHTML=[
+[round(total)+' pd','Total build effort ('+T.length+' tasks)'],
+[round(total*1.15)+' pd','With 15% contingency'],
+[round(EF[end])+' days','Critical path length'],
+[Math.ceil(Math.max(EF[end],total*1.15/3))+' days','Elapsed with ~3 people'],
+[Q.length+' open queries',q1.size+' tasks blocked by one'],
+[T.filter(t=>t[10]==='Low').length+' low-confidence','Estimates to re-check']
+].map(k=>`<div class="kpi"><b>${esc(k[0])}</b><span>${esc(k[1])}</span></div>`).join('');
+// workstream table
+const wsKeys=Object.keys(WS);
+const maxWs=Math.max(...wsKeys.map(k=>T.filter(t=>t[0].startsWith(k+'-')).reduce((a,t)=>a+t[5],0)));
+document.querySelector('#wsTable tbody').innerHTML=wsKeys.map(k=>{
+ const ts=T.filter(t=>t[0].startsWith(k+'-'));const e=ts.reduce((a,t)=>a+t[5],0);
+ return `<tr><td>${k} ${esc(WS[k])}</td><td class="n">${ts.length}</td><td class="n">${round(e)}</td><td style="width:200px"><div class="bar" style="width:${e/maxWs*180}px"></div></td><td>${esc(WSC[k])}</td></tr>`}).join('');
+// phase table
+document.querySelector('#phTable tbody').innerHTML=Object.keys(PH).map(k=>{
+ const ts=T.filter(t=>t[1]===k);const e=ts.reduce((a,t)=>a+t[5],0);
+ return `<tr><td><b>${k}</b> ${esc(PH[k][0])}</td><td>${esc(PH[k][1])}</td><td class="n">${ts.length}</td><td class="n">${round(e)}</td><td>${esc(PH[k][2])}</td></tr>`}).join('');
+// critical
+document.getElementById('critical').innerHTML='<p>'+cp.map(id=>`<span class="chip">${id}</span>`).join(' → ')+'</p><ul>'+cp.map(id=>`<li class="sm"><b>${id}</b> ${esc(byId[id][2])}: ${byId[id][5]} pd${byId[id][6]?' + '+byId[id][6]+' d wait':''}, finish day ${round(EF[id])}</li>`).join('')+'</ul>';
+// tasks table
+const sel=(id,opts)=>{const s=document.getElementById(id);opts.forEach(o=>{const e=document.createElement('option');e.value=o[0];e.textContent=o[1];s.appendChild(e)})};
+sel('fWs',wsKeys.map(k=>[k,k+' '+WS[k]]));sel('fPh',Object.keys(PH).map(k=>[k,k+' '+PH[k][0]]));
+function draw(){
+ const w=fWs.value,p=fPh.value,c=fCp.value,x=fTx.value.toLowerCase();
+ const rows=T.filter(t=>(!w||t[0].startsWith(w+'-'))&&(!p||t[1]===p)&&(!c||(c==='1'?cpSet.has(t[0]):t[9].length))&&(!x||(t[0]+t[2]+t[3]).toLowerCase().includes(x)));
+ document.querySelector('#tasks tbody').innerHTML=rows.map(t=>`<tr class="${cpSet.has(t[0])?'cp':''}"><td class="id">${t[0]}<div class="mut sm">${t[1]}</div></td><td><b>${esc(t[2])}</b><div class="det">${esc(t[3])}</div></td><td class="sm">${esc(t[4])}</td><td class="sm">${esc(t[8])}</td><td class="n">${t[5]}</td><td class="n">${t[6]||'-'}</td><td class="n">${round(ES[t[0]])}</td><td class="n">${round(EF[t[0]])}</td><td>${t[7].map(d=>`<span class="chip">${d}</span>`).join('')||'-'}</td><td>${t[9].map(d=>`<span class="chip q">${d}</span>`).join('')||'-'}</td><td class="${t[10]}">${t[10]}</td></tr>`).join('')||'<tr><td colspan="11">No tasks match.</td></tr>';
+}
+['fWs','fPh','fCp'].forEach(i=>document.getElementById(i).onchange=draw);fTx.oninput=draw;draw();
+// queries
+const blocks={};T.forEach(t=>t[9].forEach(q=>(blocks[q]=blocks[q]||[]).push(t[0])));
+document.querySelector('#qs tbody').innerHTML=Q.map(q=>`<tr><td class="id">${q[0]}</td><td>${esc(q[1])}</td><td class="sm">${esc(q[2])}</td><td>${(blocks[q[0]]||[]).map(d=>`<span class="chip">${d}</span>`).join('')||'-'}</td><td class="sm">${esc(q[3])}</td><td class="sm">${esc(q[4])}</td></tr>`).join('');
+// roles
+const rl={};T.forEach(t=>{const parts=t[8].split(/ \+ | and |\+/).map(s=>s.trim());parts.forEach(r=>{rl[r]=(rl[r]||0)+t[5]/parts.length})});
+const rn={"BA":"Needs Steven/Damian access","Dev (BE)":"Largest load; 2 engineers recommended","Dev (FE)":"Mostly after W2-7","Dev (FE+BE)":"Small admin screens","DevOps":"Early (W0-7) and late (W8)","QA":"BDD, back-test, UAT","Tech lead":"Architecture, IT liaison","Security":"W8-1 only","Dev":"Shared"};
+document.querySelector('#roles tbody').innerHTML=Object.entries(rl).sort((a,b)=>b[1]-a[1]).map(([r,e])=>`<tr><td>${esc(r)}</td><td class="n">${round(e)}</td><td class="sm">${esc(rn[r]||'')}</td></tr>`).join('');
+document.getElementById('staff').textContent='Suggested team: 1 tech lead (part-time), 2 backend engineers, 1 frontend engineer (from phase 3), 1 BA/QA, DevOps and security as needed. Effort is split evenly where a task lists two roles.';
+// CSV
+document.getElementById('csv').onclick=()=>{
+ const h=['ID','Workstream','Phase','Title','Approach','Acceptance','Effort_pd','Wait_days','Depends_on','Open_queries','Role','Confidence'];
+ const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+ const rows=T.map(t=>[t[0],WS[t[0].split('-')[0]],t[1],t[2],t[3],t[4],t[5],t[6],t[7].join(' '),t[9].join(' '),t[8],t[10]].map(q).join(','));
+ const b=new Blob([[h.map(q).join(',')].concat(rows).join('\n')],{type:'text/csv'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='rodbot_dev_tasks.csv';a.click();
+};
+</script>
+</body>
+</html>
